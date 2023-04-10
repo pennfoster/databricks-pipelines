@@ -1,7 +1,6 @@
 from paramiko import Transport, SFTPClient
 
 from shared.classes import BaseClass
-from shared.functions.file_io import generate_unique_filename
 
 
 class SFTPBase(BaseClass):
@@ -32,7 +31,6 @@ class SFTPBase(BaseClass):
         )
 
         self.connection = SFTPClient.from_transport(transport)
-        pass
 
     def __enter__(self):
         self.connect_to_host()
@@ -43,7 +41,7 @@ class SFTPBase(BaseClass):
 
     def extract_file_to_raw(self, host_dir, host_file, local_subdir: str = ""):
         host_file_path = f"{host_dir}/{host_file}"
-        local_file_path = f"{self.storage_paths.landing}/{local_subdir+'/' if local_subdir else ''}{generate_unique_filename(host_file)}"
+        local_file_path = f"{self.storage_paths.landing}/{local_subdir+'/' if local_subdir else ''}{host_file}"
         with self.connection.open(host_file_path, "rb") as download:
             with open(f"/dbfs/{local_file_path}", "wb") as load:
                 load.write(download.read())
