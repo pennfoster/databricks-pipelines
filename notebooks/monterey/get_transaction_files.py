@@ -24,7 +24,6 @@ with SFTPBase(**sftp_vars, data_source="monterey") as sftp:
 
     pattern = r"^(?P<table>Transactions|Declines)(?P<date>\d{8})\.csv$"
     for remote_file in remote_file_list:
-
         m = re.match(pattern, remote_file)
         if not m:
             logging.warning("file name found not as expected: %s" % remote_file)

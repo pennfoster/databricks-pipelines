@@ -9,6 +9,7 @@ from pyspark.sql.functions import col, from_json
 _P = ParamSpec("_P")
 _T = TypeVar("_T")
 
+
 # Decorator to pass current db instance into function as kwarg
 def pass_databricks_env(func: Callable[_P, _T]) -> Callable[_P, _T]:
     def _func(*args, **kwargs):
