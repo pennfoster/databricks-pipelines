@@ -13,8 +13,6 @@ _T = TypeVar("_T")
 # Decorator to pass current db instance into function as kwarg
 def pass_databricks_env(func: Callable[_P, _T]) -> Callable[_P, _T]:
     def _func(*args, **kwargs):
-        
-        
         sc = SparkContext.getOrCreate()
 
         environment_dict = {
