@@ -9,6 +9,7 @@ from pyspark.sql.functions import col, from_json
 _P = ParamSpec("_P")
 _T = TypeVar("_T")
 
+
 # Decorator to pass current db instance into function as kwarg
 def pass_databricks_env(func: Callable[_P, _T]) -> Callable[_P, _T]:
     def _func(*args, **kwargs):
@@ -18,16 +19,17 @@ def pass_databricks_env(func: Callable[_P, _T]) -> Callable[_P, _T]:
             "6104815453986823": "dev",  # dbw-datateam-dev001
             "7121333149039885": "ADBSmlDev01",  # ADBSmlDev01
             "8282478637069706": "prd",  # dbw-datateam-prd001
-            "2211778133336071": "prd",  # pfcarrusdata
+            # "2211778133336071": "prd",  # pfcarrusdata
         }
         workspace_id = sc.getConf().get(
             "spark.databricks.clusterUsageTags.clusterOwnerOrgId"
         )
-        if workspace_id != "6104815453986823":
-            logging.error("Env detection not yet tested outside of dbw-datateam-dev001")
-            raise ValueError("Code used in environment other than intended")
 
         kwargs["env"] = environment_dict[workspace_id]
+
+        if kwargs["env"] not in ["dev", "prd"]:
+            logging.error("Env detection not yet tested for this environment")
+            raise ValueError("Code used in environment other than intended")
 
         return func(*args, **kwargs)
 

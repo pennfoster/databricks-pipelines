@@ -5,12 +5,13 @@ from pathlib import Path
 import pendulum
 
 from shared.classes import SFTPBase
+from shared.functions.azure_utilities import get_key_vault_scope
 
 # COMMAND ----------
 sftp_vars = {
     "host": "ftp.montereyfinancial.com",
     "username": "careerstp",
-    "password": dbutils.secrets.get("kv-datateam-dev001", "monterey-sftp-pw"),
+    "password": dbutils.secrets.get(get_key_vault_scope(), "monterey-sftp-pw"),
     "hostkeys": None,
 }
 # COMMAND ----------
@@ -24,7 +25,6 @@ with SFTPBase(**sftp_vars, data_source="monterey") as sftp:
 
     pattern = r"^(?P<table>Transactions|Declines)(?P<date>\d{8})\.csv$"
     for remote_file in remote_file_list:
-
         m = re.match(pattern, remote_file)
         if not m:
             logging.warning("file name found not as expected: %s" % remote_file)
