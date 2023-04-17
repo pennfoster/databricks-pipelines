@@ -1,0 +1,109 @@
+{
+    "job_id": 844936444884236,
+    "creator_user_name": "nblanks@pennfoster.edu",
+    "run_as_user_name": "nblanks@pennfoster.edu",
+    "run_as_owner": true,
+    "settings": {
+        "name": "monterey_transactions_sftp",
+        "email_notifications": {
+            "on_failure": [
+                "nblanks@pennfoster.edu"
+            ],
+            "no_alert_for_skipped_runs": false
+        },
+        "webhook_notifications": {},
+        "timeout_seconds": 0,
+        "schedule": {
+            "quartz_cron_expression": "40 0 0 * * ?",
+            "timezone_id": "UTC",
+            "pause_status": "UNPAUSED"
+        },
+        "max_concurrent_runs": 1,
+        "tasks": [
+            {
+                "task_key": "get_monterey_files",
+                "notebook_task": {
+                    "notebook_path": "/Repos/Production/databricks_pipelines/notebooks/monterey/get_transaction_files",
+                    "source": "WORKSPACE"
+                },
+                "job_cluster_key": "Job_cluster",
+                "libraries": [
+                    {
+                        "pypi": {
+                            "package": "aiohttp==3.8.4"
+                        }
+                    },
+                    {
+                        "pypi": {
+                            "package": "oauthlib==3.2.2"
+                        }
+                    },
+                    {
+                        "pypi": {
+                            "package": "paramiko==3.1.0"
+                        }
+                    },
+                    {
+                        "pypi": {
+                            "package": "pendulum==2.1.2"
+                        }
+                    },
+                    {
+                        "pypi": {
+                            "package": " requests==2.28.2"
+                        }
+                    },
+                    {
+                        "pypi": {
+                            "package": "requests-oauthlib==1.3.1"
+                        }
+                    }
+                ],
+                "timeout_seconds": 0,
+                "email_notifications": {}
+            },
+            {
+                "task_key": "push_raw_to_bronze",
+                "depends_on": [
+                    {
+                        "task_key": "get_monterey_files"
+                    }
+                ],
+                "notebook_task": {
+                    "notebook_path": "/Repos/ETL/databricks_pipelines/notebooks/monterey/load_to_bronze",
+                    "source": "WORKSPACE"
+                },
+                "job_cluster_key": "Job_cluster",
+                "timeout_seconds": 0,
+                "email_notifications": {}
+            }
+        ],
+        "job_clusters": [
+            {
+                "job_cluster_key": "Job_cluster",
+                "new_cluster": {
+                    "cluster_name": "",
+                    "spark_version": "11.3.x-scala2.12",
+                    "spark_conf": {
+                        "spark.databricks.delta.preview.enabled": "true"
+                    },
+                    "azure_attributes": {
+                        "first_on_demand": 1,
+                        "availability": "ON_DEMAND_AZURE",
+                        "spot_bid_max_price": -1
+                    },
+                    "node_type_id": "Standard_F4",
+                    "spark_env_vars": {
+                        "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+                    },
+                    "enable_elastic_disk": true,
+                    "data_security_mode": "NONE",
+                    "runtime_engine": "STANDARD",
+                    "num_workers": 2
+                }
+            }
+        ],
+        "format": "MULTI_TASK"
+    },
+    "created_time": 1681409736954
+}
