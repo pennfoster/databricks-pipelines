@@ -23,7 +23,7 @@
             {
                 "task_key": "get_monterey_files",
                 "notebook_task": {
-                    "notebook_path": "/Repos/Production/databricks_pipelines/notebooks/monterey/get_transaction_files",
+                    "notebook_path": "/Repos/ETL/databricks_pipelines/notebooks/monterey/get_transaction_files",
                     "source": "WORKSPACE"
                 },
                 "job_cluster_key": "Job_cluster",
