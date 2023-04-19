@@ -19,6 +19,14 @@
    1. `git push origin/<name_of_branch>`
 6. Repeat...
 
+## Setup orchestration loop
+
+### DBricks Jobs
+
+1. Create and run new job through DBricks UI in Development
+2. Copy job as JSON object into new branch of Jobs repo
+3. Repeat...
+
 ## Pull Requests
 
 1. Pull from `main` branch and merge into development branch to ensure current code
