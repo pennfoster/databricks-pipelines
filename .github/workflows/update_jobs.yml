@@ -59,4 +59,8 @@ jobs:
                 "group_name": "users",
                 "permission_level": "CAN_VIEW"
               }
+<<<<<<< HEAD
             ]
+=======
+            ]
+>>>>>>> master
