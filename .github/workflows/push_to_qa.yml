@@ -20,7 +20,7 @@ jobs:
             -X PATCH \
             'https://${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
             -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}'
-            -d '{"branch": "main"}'
+            -d '{"branch": "master"}'
 
   update_jobs:
     runs-on: ubuntu-latest
