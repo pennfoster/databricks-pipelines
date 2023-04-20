@@ -6,7 +6,10 @@ from shared.functions.databricks_utilities import pass_databricks_env
 @pass_databricks_env
 def get_key_vault_scope(**kwargs):
     env = kwargs["env"]
-    key_vault_scopes = {"dev": "kv-datateam-dev001"}
+    key_vault_scopes = {
+        "dev": "kv-datateam-dev001",
+        "prd": "kv-datateam-prd001",
+    }
 
     return key_vault_scopes[env]
 
