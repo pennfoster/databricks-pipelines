@@ -37,7 +37,7 @@ session.headers = {
     "Authorization": f"Bearer {dbutils.secrets.get(get_key_vault_scope(), 'cicd-access-token')}",
 }
 for job, status in jobs_to_process:
-    job.settings["schedule"][""]["pause_status"] = "PAUSED"
+    job.settings["schedule"]["pause_status"] = "PAUSED"
     # 'added', 'removed', 'modified', 'renamed', 'copied', 'changed', 'unchanged'
     if status == "removed":
         request_body = {"job_id": job.id}
