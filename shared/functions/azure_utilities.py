@@ -8,9 +8,9 @@ def get_key_vault_scope(**kwargs):
     env = kwargs["env"]
     key_vault_scopes = {
         "dev": "kv-datateam-dev001",
+        "qa": "kv-datateam-qa001",
         "prd": "kv-datateam-prd001",
     }
-
     return key_vault_scopes[env]
 
 
