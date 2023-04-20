@@ -22,7 +22,7 @@ jobs:
       - name: update_jobs
         uses: databricks/run-notebook@v0
         with:
-          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_jobs.py
+          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
           new-cluster-json: >
             {
               "num_workers": 1,
@@ -40,7 +40,7 @@ jobs:
       - name: trigger_new_jobs
         uses: databricks/run-notebook@v0
         with:
-          local-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/trigger_updated_jobs.py
+          local-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/trigger_updated_jobs
           notebook-params-json: >
             [
               {
