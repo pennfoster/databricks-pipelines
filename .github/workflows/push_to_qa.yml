@@ -4,9 +4,7 @@ name: Update Databricks Jobs
 on:
   push:
     branches:
-      - main
       - master
-      - cicd/repo_update
 
 jobs:
   pull_latest_commit:
@@ -15,7 +13,8 @@ jobs:
     steps:
       - name: API post request
         run: |
-          curl -L -X PATCH '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"branch": "master"}'
+          curl -L -X PATCH '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
+          -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"branch": "master"}'
 
   update_jobs:
     needs: pull_latest_commit
