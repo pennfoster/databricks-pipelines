@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - cicd/trigger_new_jobs
 
 jobs:
   pull_latest_commit:
@@ -53,7 +54,7 @@ jobs:
           notebook-params-json: >
             [
               {
-                "job_ids": ${{steps.update_jobs.outputs.notebook-output}}
+                "job_ids": "${{steps.update_jobs.outputs.notebook-output}}"
               }
             ]
           new-cluster-json: >
