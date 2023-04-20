@@ -19,7 +19,7 @@ jobs:
             -L \
             -X PATCH \
             '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
-            -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}'
+            -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' \ 
             -d '{"branch": "master"}'
 
   update_jobs:
