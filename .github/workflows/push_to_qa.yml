@@ -54,9 +54,7 @@ jobs:
           workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/trigger_updated_jobs
           notebook-params-json: >
             [
-              {
-                "job_ids": "${{steps.update_jobs.outputs.notebook-output}}"
-              }
+              {"key": "job_ids", "value": "${{ steps.update_jobs.outputs.notebook-output }}"}
             ]
           new-cluster-json: >
             {
