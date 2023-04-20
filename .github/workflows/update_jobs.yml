@@ -11,15 +11,18 @@ jobs:
   update_jobs:
     runs-on: ubuntu-latest
     environment: staging
+    env:
+      DATABRICKS_HOST: ${{vars.DATABRICKS_HOST}}
+      DATABRICKS_TOKEN: ${{secrets.DATABRICKS_TOKEN}}
     steps:
-
+      
       - name: Checks out the repo
         uses: actions/checkout@v3
-
+      
       - name: update_jobs
         uses: databricks/run-notebook@v0
         with:
-          local-notebook-path: notebooks/ci_cd/update_env_jobs.py
+          workspace-notebook-path: Repos/ETL/notebooks/ci_cd/update_env_jobs.py
           new-cluster-json: >
             {
               "num_workers": 1,
