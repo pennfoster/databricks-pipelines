@@ -50,11 +50,11 @@ jobs:
       - name: trigger_new_jobs
         uses: databricks/run-notebook@v0
         with:
-          local-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/trigger_updated_jobs
+          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/trigger_updated_jobs
           notebook-params-json: >
             [
               {
-                "job_ids": "${{steps.update_jobs.outputs.notebook-output}}"
+                "job_ids": "${{steps.update_jobs.outputs.*}}"
               }
             ]
           new-cluster-json: >
