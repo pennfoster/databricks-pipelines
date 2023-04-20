@@ -9,6 +9,19 @@ on:
       - cicd/repo_update
 
 jobs:
+  pull_latest_commit:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: API post request
+        run: |
+          curl \
+            -L \
+            -X PATCH \
+            'https://${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
+            -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}'
+            -d '{"branch": "main"}'
+
   update_jobs:
     runs-on: ubuntu-latest
     environment: staging
