@@ -96,16 +96,20 @@ for file in unprocessed:
 dbutils.notebook.exit("SUCCESS")
 
 
+# dbutils.notebook.exit("SUCCESS")
+
+
 # from pyspark.sql.types import *
 # dtype_map = {
-#     'string.time.date': DateType,
-#     'string.text.value': StringType,
-#     'int.number.value': IntegerType,
-#  'float.currency.value': DoubleType,
-#  'float.number.ratio': DoubleType,
-#  'float.number.value': DoubleType}
+#     'string.time.date': StringType(),
+#     'string.text.value': StringType(),
+#     'int.number.value': StringType(),
+#  'float.currency.value': StringType(),
+#  'float.number.ratio': StringType(),
+#  'float.number.value': StringType()}
 
-# fields = j['meta']['query']['fields']
+# fields = b['meta']['query']['fields']
+# data = b['data'][1:]
 # a = []
 # for i in fields:
 #     a.append(StructField(
@@ -113,3 +117,9 @@ dbutils.notebook.exit("SUCCESS")
 #         dataType=dtype_map[i['data_type']],
 #         nullable=True
 #     ))
+# schema = StructType(a)
+# df = spark.createDataFrame(data=data, schema=schema)
+
+# from pyspark.sql.functions import col
+# df_temp.select(*(col(c).cast("float").alias(c) for c in df_temp.columns))
+# df.withColumn("salary",col("salary").cast('double'))
