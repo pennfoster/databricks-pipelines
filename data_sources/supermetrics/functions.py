@@ -11,8 +11,6 @@ def get_url_dataframe(env: str):
     df = pd.read_csv(
         f"/dbfs/mnt/sadataraw{env}001_control/supermetrics/urls_for_api_rev.csv"
     )
-    df = df[df["C001_SearchName"].str.startswith("-") == False]
-    df.reset_index(drop=True, inplace=True)
     return df
 
 

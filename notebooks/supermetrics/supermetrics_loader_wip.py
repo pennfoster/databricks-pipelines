@@ -32,32 +32,39 @@ end_date = dbutils.widgets.get("end_date")
 if start_date == "":
     date_range = None
 elif end_date == "":
-    date_range = f'"date_range":"{start_date}",'
+    date_range = f'"date_range_type":"{start_date}",'
 else:
     date_range = f'"start_date":"{start_date}","end_date":"{end_date}",'
 if date_range:
     url = re.sub('(?<=)"date_range.+?(?<=\,)', date_range, url)
 
-raw_dir = f"mnt/sadataraw{env}001_landing/supermetrics/{search_name}/{query_name}"
-bronze_dir = f"mnt/bronze/supermetrics/{search_name}/{query_name}"
+raw_dir = f"/mnt/sadataraw{env}001_landing/supermetrics/{search_name}/{query_name}"
+bronze_dir = f"/mnt/bronze/supermetrics/{search_name}/{query_name}"
 
 # COMMAND -----
 sm = Supermetrics()
 resp_json = sm.get_data(url)
+if not resp_json["data"]:
+    print("No data retrived from API.")
+    dbutils.notebook.exit("No data retrived from API.")
 
 # COMMAND -----
 json_path = save_json(
-    dest_dir=f"/dbfs/{raw_dir}",
+    dest_dir=f"/dbfs{raw_dir}",
     file_name=f"{search_name}_{query_name}",
     data=resp_json,
     suffix="timestamp",
     parents=True,
 )
+
 print(json_path)
 
 # COMMAND -----
 # Load from raw and save to bronze
-unprocessed = [str(file) for file in Path(f"/dbfs/{raw_dir}").iterdir()]
+unprocessed = [
+    str(file) for file in Path(f"/dbfs{raw_dir}").iterdir() if file.is_file()
+]
+# unprocessed = dbutils.fs.ls(raw_dir)
 
 for file in unprocessed:
     resp_json = load_json(f"{file}")
@@ -78,12 +85,11 @@ for file in unprocessed:
     sparkdf.write.format("delta").mode("append").option("mergeSchema", True).option(
         "overwriteSchema",
         True,
-    ).save(f"/{bronze_dir}/searchname")
+    ).save(f"{bronze_dir}/{search_name}_{query_name}")
 
-    processed_dir = Path(raw_dir).join("processed")
-    Path(processed_dir).mkdir(parents=False, exist_ok=True)
-    dbutils.mv(file, processed_dir)
-
+    processed_dir = f"{raw_dir}/processed"
+    Path(processed_dir).mkdir(parents=True, exist_ok=True)
+    dbutils.fs.mv(f"{file}".replace("/dbfs", ""), processed_dir)
 # COMMAND -----
 
 # COMMAND -----
