@@ -1,1 +1,1 @@
-
+COMPANY_TIMEZONE = "EST"
