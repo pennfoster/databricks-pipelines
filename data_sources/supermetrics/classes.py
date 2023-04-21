@@ -29,7 +29,7 @@ class Supermetrics:
             self.fields = json_response["meta"]["query"]["fields"]
             self.status = json_response["meta"]["status_code"].lower()
         else:
-            raise TypeError(
+            raise RuntimeError(
                 "Response does not match known format. Check URL is correct or map new json response structure."
             )
 
