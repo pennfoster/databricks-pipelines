@@ -17,7 +17,6 @@ EMAIL_NOTIFICATIONS = {
 RAW_LANDING_DIR = f"mnt/sadataraw{ENV}001_control/supermetrics"
 
 df = get_url_dataframe(ENV)
-# df = df.iloc[0:10, :]
 
 # Create tasks
 tasks = []
@@ -39,23 +38,6 @@ for i in df.index:
     }
     tasks.append(task)
 
-# Create settings
-# settings = {
-#     "name": "supermetrics_loads_test",
-#     "email_notifications": EMAIL_NOTIFICATIONS,
-# }
-
-# settings = {
-#     "name": "supermetrics_loads_test",
-#     "email_notifications": EMAIL_NOTIFICATIONS,
-#     "webhook_notifications": {},
-#     "timeout_seconds": 0,
-#     "max_concurrent_runs": 1,
-#     "tasks": tasks,
-#     "format": "MULTI_TASK",
-# }
-
-
 config = {
     "settings": {},
     "name": NAME,
@@ -67,13 +49,9 @@ config = {
     "format": "MULTI_TASK",
 }
 
-# config = {
-#     "settings": settings,
-# }
-
 
 json_path = save_json(
-    dest_path=f"/dbfs/{RAW_LANDING_DIR}",
+    dest_dir=f"/dbfs/{RAW_LANDING_DIR}",
     file_name=f"create_supermetrics_job",
     data=config,
 )
