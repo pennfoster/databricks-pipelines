@@ -1,11 +1,10 @@
-# Documentation for Databricks specific actions found @ https://github.com/databricks/run-notebook/blob/main/action.yml
 name: Update Databricks Jobs
 
 on:
   push:
     branches:
       - master
-      - cicd/trigger_new_jobs
+      - cicd/wip
 
 jobs:
   pull_latest_commit:
@@ -27,6 +26,7 @@ jobs:
     outputs:
       matrix: ${{ steps.update_jobs.outputs.notebook-output }}
     steps:
+# Documentation for Databricks specific actions found @ https://github.com/databricks/run-notebook/blob/main/action.yml    
       - name: Update jobs
         id: update_jobs
         uses: databricks/run-notebook@v0
@@ -58,26 +58,3 @@ jobs:
         run: |
           curl -L -X POST '${{vars.DATABRICKS_HOST}}/api/2.1/jobs/run-now' \
           -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"job_id": "${{ matrix.job_id }}"}'
-
-  # # todo https://stackoverflow.com/questions/59180385/using-an-array-of-values-to-repeat-a-step-in-github-actions-workflow
-  #     - name: trigger_new_jobs
-  #       uses: databricks/run-notebook@v0
-  #       with:
-  #         workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/trigger_updated_jobs
-  #         notebook-params-json: >
-  #           [
-  #             {"key": "job_ids", "value": "${{ steps.update_jobs.outputs.notebook-output }}"}
-  #           ]
-  #         new-cluster-json: >
-  #           {
-  #             "num_workers": 1,
-  #             "spark_version": "11.3.x-scala2.12",
-  #             "node_type_id": "Standard_F4"
-  #           }
-  #         access-control-list-json: >
-  #           [
-  #             {
-  #               "group_name": "users",
-  #               "permission_level": "CAN_VIEW"
-  #             }
-  #           ]
