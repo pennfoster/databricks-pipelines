@@ -2,7 +2,7 @@ import requests
 from typing import List, Tuple, Literal
 
 
-# TODO needs auth
+# ! This code is no longer inuse and can be deprecated. Left here in case for now. (2023-04-24 Noam Blanks)
 def get_pr_files(
     repo: str, pr_number: int, directory_path: str = None
 ) -> List[
@@ -43,6 +43,3 @@ def get_pr_files(
     if directory_path:
         changed_files = [t for t in changed_files if t[0].startswith(directory_path)]
     return changed_files
-
-
-# TODO trigger runs for any files that have changes logged.
