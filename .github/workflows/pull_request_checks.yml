@@ -54,6 +54,7 @@ jobs:
             jq '.tags.workflow')
           if [ "$CICD_TAG" != "CI/CD" ]
             then
+              echo $CICD_TAG
               echo "Job @ ${{ matrix.job_content }} missing required \"workflow: CI/CD\" tag"
               exit 1
           fi
