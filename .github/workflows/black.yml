@@ -23,7 +23,7 @@ jobs:
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' |
             jq -c [".[].download_url"])
-          echo $link_list >> "$GITHUB_OUTPUT"
+          echo "$link_list" >> "$GITHUB_OUTPUT"
   
   assure_cicd_tag:
     runs-on: ubuntu-latest
