@@ -1,4 +1,3 @@
-# Documentation for Databricks specific actions found @ https://github.com/databricks/run-notebook/blob/main/action.yml
 name: Update Databricks Jobs
 
 on:
@@ -15,7 +14,7 @@ jobs:
         run: |
           curl -L -X PATCH '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
           -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"branch": "master"}'
-
+  
   update_jobs:
     needs: pull_latest_commit
     runs-on: ubuntu-latest
@@ -23,12 +22,12 @@ jobs:
     env:
       DATABRICKS_HOST: ${{vars.DATABRICKS_HOST}}
       DATABRICKS_TOKEN: ${{secrets.DATABRICKS_TOKEN}}
+    outputs:
+      matrix: ${{ steps.update_jobs.outputs.notebook-output }}
     steps:
-      
-      - name: Checks out the repo
-        uses: actions/checkout@v3
-      
-      - name: update_jobs
+# Documentation for Databricks specific actions found @ https://github.com/databricks/run-notebook/blob/main/action.yml    
+      - name: Update jobs
+        id: update_jobs
         uses: databricks/run-notebook@v0
         with:
           workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
@@ -45,27 +44,16 @@ jobs:
                 "permission_level": "CAN_VIEW"
               }
             ]
-  
-      - name: trigger_new_jobs
-        uses: databricks/run-notebook@v0
-        with:
-          local-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/trigger_updated_jobs
-          notebook-params-json: >
-            [
-              {
-                "job_ids": ${{steps.update_jobs.outputs.notebook-output}}
-              }
-            ]
-          new-cluster-json: >
-            {
-              "num_workers": 1,
-              "spark_version": "11.3.x-scala2.12",
-              "node_type_id": "Standard_F4"
-            }
-          access-control-list-json: >
-            [
-              {
-                "group_name": "users",
-                "permission_level": "CAN_VIEW"
-              }
-            ]
+
+  trigger_jobs:
+    needs: update_jobs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        job_id: ${{ fromJson(needs.update_jobs.outputs.matrix) }}
+    environment: staging
+    steps:
+      - name: Trigger Job n
+        run: |
+          curl -L -X POST '${{vars.DATABRICKS_HOST}}/api/2.1/jobs/run-now' \
+          -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"job_id": "${{ matrix.job_id }}"}'
