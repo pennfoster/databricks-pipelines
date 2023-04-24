@@ -36,6 +36,8 @@ jobs:
             jq -c [".[].download_url"])
           echo "link_list=$LINK_LIST" >> "$GITHUB_OUTPUT"
   
+  # TODO assure unique job names
+
   assure_cicd_tag:
     runs-on: ubuntu-latest
     environment: development
