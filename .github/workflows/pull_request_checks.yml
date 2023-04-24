@@ -1,7 +1,9 @@
 name: Pull Request Checks
 
-on: pull_request
-
+on: 
+  pull_request: 
+    types: [opened, edited, reopened]
+    
 jobs:
   python_format:
     runs-on: ubuntu-latest
