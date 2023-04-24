@@ -103,6 +103,10 @@
                 }
             }
         ],
+        "tags": {
+            "repo": "databricks-pipelines",
+            "workflow": "CI/CD"
+        },
         "format": "MULTI_TASK"
     },
     "created_time": 1681409736954
