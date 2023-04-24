@@ -51,7 +51,7 @@ jobs:
       - name: Check job tags
         run: >
           CICD_TAG=$(curl -L ${{ matrix.job_content }} |
-            jq 'tags.workflow')
+            jq '.tags.workflow')
           if [ "$CICD_TAG" != "CI/CD" ]
             then
               echo "Job @ ${{ matrix.job_content }} missing required \"workflow: CI/CD\" tag"
