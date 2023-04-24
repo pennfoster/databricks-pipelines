@@ -19,7 +19,7 @@ jobs:
         id: repo_files
         run: >
           link_list=$(curl \
-            -L 'https://api.github.com/repos/pennfoster/databricks-pipelines/contents/orchestration/dbricks_jobs?ref=${{ github.ref_name }}}' \
+            -L 'https://api.github.com/repos/pennfoster/databricks-pipelines/contents/orchestration/dbricks_jobs?ref=${{ github.ref_name }}' \
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' |
             jq -r [".[].download_url"])
