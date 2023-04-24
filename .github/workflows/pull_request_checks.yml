@@ -1,0 +1,55 @@
+name: Pull Request Checks
+
+on: pull_request
+
+jobs:
+  python_format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Black Formatter
+        uses: psf/black@stable
+
+  unit_tests:
+    needs: python_format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pytest Goes Here
+        # uses: databricks/run-notebook@v0
+        run: echo "Unit test placeholder"
+
+  get_updated_job_files:
+    needs: unit_tests
+    runs-on: ubuntu-latest
+    environment: development
+    outputs:
+      matrix: ${{ steps.repo_files.outputs.link_list }}
+    steps:
+      - name: Get repo job files
+        id: repo_files
+        run: >
+          LINK_LIST=$(curl \
+            -L 'https://api.github.com/repos/pennfoster/databricks-pipelines/contents/orchestration/dbricks_jobs?ref=${{ github.head_ref }}' \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' |
+            jq -c [".[].download_url"])
+          echo "link_list=$LINK_LIST" >> "$GITHUB_OUTPUT"
+  
+  assure_cicd_tag:
+    runs-on: ubuntu-latest
+    environment: development
+    needs: get_updated_job_files
+    strategy:
+      matrix:
+        job_content: ${{ fromJson(needs.get_updated_job_files.outputs.matrix) }}
+    steps:
+      - name: Check job tags
+        run: >
+          CICD_TAG=$(curl -L ${{ matrix.job_content }} |
+            jq '.settings.tags.workflow')
+          if [ "$CICD_TAG" != "CI/CD" ]
+            then
+              echo "Job @ ${{ matrix.job_content }} missing required \"workflow: CI/CD\" tag"
+              exit 1
+          fi
