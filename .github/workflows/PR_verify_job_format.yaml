@@ -36,7 +36,7 @@ jobs:
       - name: Set variables
         id: job_vars
         run: >
-          DOWNLOAD_URL=$(curl -L "${{ matrix.job_content }}" | jq -r .download_url)
+          DOWNLOAD_URL=$(curl -L "${{ matrix.job_content }}" | jq -r .download_url);
           JOB_VARS=$(curl -L "$DOWNLOAD_URL");
           echo "cicd_tag=$(echo "$JOB_VARS" | jq -r '.tags.workflow')" >> "$GITHUB_OUTPUT";
           echo "task_filepaths=$(echo "$JOB_VARS" | jq -cr ['.tasks[].notebook_task.notebook_path'])" >> "$GITHUB_OUTPUT";
