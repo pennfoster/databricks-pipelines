@@ -34,7 +34,7 @@
                 }
             ],
             "notebook_task": {
-                "notebook_path": "/Repos/someone@someemail.com/databricks_pipelines/notebooks/dummy/dummy_2",
+                "notebook_path": "/Repos/ETL/databricks_pipelines/notebooks/dummy/dummy_2",
                 "source": "WORKSPACE"
             },
             "job_cluster_key": "Job_cluster",
