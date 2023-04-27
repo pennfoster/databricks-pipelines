@@ -1,4 +1,4 @@
-name: Job Variables Tests
+name: PR - Job Variables Tests
 
 on: 
   pull_request:

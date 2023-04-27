@@ -1,4 +1,4 @@
-name: Update Databricks Jobs
+name: QA - Update and Trigger Jobs in Staging
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
       - name: API post request
         run: |
           curl -L -X PATCH '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
-          -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"branch": "master"}'
+          -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"branch": "staging"}'
   
   update_jobs:
     needs: pull_latest_commit
@@ -58,10 +58,32 @@ jobs:
           curl -L -X POST '${{vars.DATABRICKS_HOST}}/api/2.1/jobs/run-now' \
           -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"job_id": "${{ matrix.job_id }}"}'
 
-  start_test_sensore:
-    needs: update_jobs
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - run: >
-          echo ${{ needs.update_jobs.outputs.matrix }}
+  # start_test_sensor:
+  #   needs: update_jobs
+  #   runs-on: ubuntu-latest
+  #   environment: staging
+  #   env:
+  #     DATABRICKS_HOST: ${{vars.DATABRICKS_HOST}}
+  #     DATABRICKS_TOKEN: ${{secrets.DATABRICKS_TOKEN}}
+  #   steps:
+  #     - name: Trigger test sensor
+  #       run: >
+  #         echo ${{ needs.update_jobs.outputs.matrix }}
+  #             id: update_jobs
+  #             uses: databricks/run-notebook@v0
+  #             with:
+  #               workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
+  #               new-cluster-json: >
+  #                 {
+  #                   "num_workers": 1,
+  #                   "spark_version": "11.3.x-scala2.12",
+  #                   "node_type_id": "Standard_F4"
+  #                 }
+  #               access-control-list-json: >
+  #                 [
+  #                   {
+  #                     "group_name": "users",
+  #                     "permission_level": "CAN_VIEW"
+  #                   }
+  #                 ]
+      

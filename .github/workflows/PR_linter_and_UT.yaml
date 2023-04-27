@@ -1,4 +1,4 @@
-name: Python Lint and Unit Tests
+name: PR - Python Lint and Unit Tests
 
 on: 
   pull_request:
