@@ -48,6 +48,7 @@ def get_repo_jobs(repo: str, path_to_jobs: str, branch: str = "master") -> List[
         for job in job_data
     ]
 
+
 def get_current_env_jobs() -> List[Job]:
     env_domain = sc.getConf().get("spark.databricks.workspaceUrl")
     data = []
