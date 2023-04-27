@@ -37,7 +37,7 @@ jobs:
       - name: Check job tags
         run: >
           CICD_TAG=$(curl -L ${{ matrix.job_content }} |
-            jq '.tags.workflow')
+            jq -r '.tags.workflow')
           if [ $CICD_TAG != "CI/CD" ]
             then
               echo $CICD_TAG
