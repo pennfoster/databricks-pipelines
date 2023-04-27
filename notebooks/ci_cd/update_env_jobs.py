@@ -38,7 +38,7 @@ repo_job_names = [j.name for j in repo_jobs]
 for job in extant_jobs:
     if not job.name in repo_job_names:
         to_be_removed.append(job)
-        
+
 # COMMAND ----------
 # DBTITLE 1, Destroy, Update, & Create PR Jobs
 output_job_ids = []
@@ -56,20 +56,19 @@ for job in to_be_removed:
     response.raise_for_status()
     print(f"Job {job.id} ({job.name}) deleted.")
 
-for job in repo_jobs:
-    if job.name in to_be_updated:
-        request_body = {"job_id": job.id, "new_settings": job.settings}
-        response = session.post(f"{url}/update", json={"job_id": job.id})
-        response.raise_for_status()
-        print(f"Job {job.id} ({job.name}) updated.")
-        output_job_ids.append(job.id)
-        
-    if job.name in to_be_added:
-        request_body = job.settings
-        response = session.post(f"{url}/create", json=request_body)
-        response.raise_for_status()
-        print(f"Job {response.json()['job_id']} ({job.name}) created.")
-        output_job_ids.append(job.id)
+for job in to_be_updated:
+    request_body = {"job_id": job.id, "new_settings": job.settings}
+    response = session.post(f"{url}/update", json={"job_id": job.id})
+    response.raise_for_status()
+    print(f"Job {job.id} ({job.name}) updated.")
+    output_job_ids.append(job.id)
+
+for job in to_be_added:
+    request_body = job.settings
+    response = session.post(f"{url}/create", json=request_body)
+    response.raise_for_status()
+    print(f"Job {response.json()['job_id']} ({job.name}) created.")
+    output_job_ids.append(job.id)
 
 
 # COMMAND ----------
