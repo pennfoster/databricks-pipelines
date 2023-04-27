@@ -1,30 +1,36 @@
 # Databricks notebook source
 # DBTITLE 1, Setup
-from orchestration.functions import get_current_env_jobs, get_job_settings_from_github
-from shared.functions.github_utilities import get_pr_files
+import json
+import requests
+
+from orchestration.functions import get_current_env_jobs, get_repo_jobs
 from shared.functions.azure_utilities import get_key_vault_scope
-import requests, json
 
 jobs_repo = "databricks-pipelines"
-jobs_branch = "cicd/test_jobs_in_pr"
 jobs_path = "orchestration/dbricks_jobs"
-pull_request_number = 6  # TODO PR param from request
+jobs_branch = "cicd/test_jobs_in_pr"  # TODO remove
 
 # COMMAND ----------
-# DBTITLE 1, Get Extant and New Jobs Metadata
-pr_files = get_pr_files(jobs_repo, pull_request_number, jobs_path)
+# DBTITLE 1, Get Extant and New Jobs Metadataz
+
+
+repo_jobs = get_repo_jobs(jobs_repo, jobs_path, jobs_branch)
 extant_jobs = get_current_env_jobs()
 
-jobs_to_process = []
-for fp, status in pr_files:
-    pr_job = get_job_settings_from_github(jobs_repo, fp, jobs_branch)
-    extant_id = None
-    for e in extant_jobs:
-        if e.name.lower() == pr_job.name.lower():
-            pr_job = pr_job._replace(id=e.id)
-            break
+extant_job_names = set([e.name for e in extant_jobs])
+repo_job_names = set([r.name for r in repo_jobs])
 
-    jobs_to_process.append((pr_job, status))
+for job in repo_jobs:
+    for e in extant_jobs:
+        if e.name == job.name:
+            job = job._replace(id=e.id)
+
+to_be_added = repo_job_names - extant_job_names
+to_be_updated = extant_job_names & repo_job_names
+to_be_deleted = extant_job_names - repo_job_names
+
+# tests whether there are any common jobs in the lists
+assert set(to_be_added).intersection(*[to_be_updated, to_be_deleted]) == set()
 
 # COMMAND ----------
 # DBTITLE 1, Destroy, Update, & Create PR Jobs
@@ -36,28 +42,30 @@ session.headers = {
     **session.headers,
     "Authorization": f"Bearer {dbutils.secrets.get(get_key_vault_scope(), 'cicd-access-token')}",
 }
-for job, status in jobs_to_process:
-    job.settings["schedule"]["pause_status"] = "PAUSED"
-    # 'added', 'removed', 'modified', 'renamed', 'copied', 'changed', 'unchanged'
-    if status == "removed":
-        request_body = {"job_id": job.id}
+for job in extant_jobs:
+    if job.name in to_be_deleted:
+        request_body = {"job_id": e.id}
         response = session.post(f"{url}/delete", json=request_body)
         response.raise_for_status()
-        print(f"Job {job.id} ({job.name}) deleted.")
-    elif job.id:
+        print(f"Job {e.id} ({e.name}) deleted.")
+
+for job in repo_jobs:
+    if job.name in to_be_updated:
         request_body = {"job_id": job.id, "new_settings": job.settings}
         response = session.post(f"{url}/update", json={"job_id": job.id})
         response.raise_for_status()
         print(f"Job {job.id} ({job.name}) updated.")
         output_job_ids.append(job.id)
-    elif not job.id:
+    if job.name in to_be_added:
         request_body = job.settings
         response = session.post(f"{url}/create", json=request_body)
         response.raise_for_status()
         print(f"Job {response.json()['job_id']} ({job.name}) created.")
         output_job_ids.append(job.id)
 
+
 # COMMAND ----------
 # DBTITLE 1, Output Updated Job IDs JSON String
 
+session.close()
 dbutils.notebook.exit(json.dumps(output_job_ids))

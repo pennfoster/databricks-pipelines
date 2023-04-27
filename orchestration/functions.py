@@ -1,5 +1,5 @@
 import json, logging, requests
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 from pyspark.sql import SparkSession
 from pyspark.context import SparkContext
@@ -18,25 +18,46 @@ class Job(NamedTuple):
     settings: dict
 
 
-def get_job_settings_from_github(repo, filepath: str, branch: str = "master"):
-    url = f"https://api.github.com/repos/pennfoster/{repo}/contents/{filepath}"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    response = requests.get(url, headers=headers, params={"ref": branch})
-    response.raise_for_status()
+def get_repo_jobs(repo: str, path_to_jobs: str, branch: str = "master") -> List[Job]:
+    url = f"https://api.github.com/repos/pennfoster/{repo}/contents/{path_to_jobs}"
 
-    job_data = json.loads(requests.get(response.json()["download_url"]).text)
+    with requests.Session() as s:
+        s.headers = {
+            **s.headers,
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        jobs_dir = s.get(url, params={"ref": branch})
+        jobs_dir.raise_for_status()
 
-    return Job(
-        id=None,
-        name=job_data["settings"]["name"],
-        settings=job_data["settings"],
-    )
+        job_data = [
+            json.loads(s.get(job["download_url"]).text) for job in jobs_dir.json()
+        ]
+
+    assert len(set([j["name"].lower() for j in job_data])) == len(job_data)
+
+    return [Job(id=None, name=job["name"], settings=job) for job in job_data]
 
 
-def get_current_env_jobs():
+# def get_job_settings_from_github(repo, filepath: str, branch: str = "master"):
+#     url = f"https://api.github.com/repos/pennfoster/{repo}/contents/{filepath}"
+#     headers = {
+#         "Accept": "application/vnd.github+json",
+#         "X-GitHub-Api-Version": "2022-11-28",
+#     }
+#     response = requests.get(url, headers=headers, params={"ref": branch})
+#     response.raise_for_status()
+
+#     job_data = json.loads(requests.get(response.json()["download_url"]).text)
+
+#     return Job(
+#         id=None,
+#         name=job_data["settings"]["name"],
+#         settings=job_data["settings"],
+#     )
+
+
+def get_current_env_jobs() -> List[Job]:
     env_domain = sc.getConf().get("spark.databricks.workspaceUrl")
     data = []
     with requests.Session() as s:
@@ -52,16 +73,19 @@ def get_current_env_jobs():
                 break
             s.params["offset"] = len(data)
 
-    extant_jobs = [
-        Job(
-            id=j["job_id"],
-            name=j["settings"]["name"],
-            settings=j["settings"],
+    extant_jobs: List[Job] = []
+    for job in data:
+        if job["settings"].get("tags", {}).get("workflow") != "CI/CD":
+            continue
+        extant_jobs.append(
+            Job(
+                id=job["job_id"],
+                name=job["settings"]["name"],
+                settings=job["settings"],
+            )
         )
-        for j in data
-    ]
 
-    unique_job_names = set([j.settings["name"].lower() for j in extant_jobs])
+    unique_job_names = set([j.name.lower() for j in extant_jobs])
     if len(unique_job_names) != len(extant_jobs):
         job_count = {}
         for name in unique_job_names:
@@ -71,8 +95,8 @@ def get_current_env_jobs():
         for k, v in job_count.items():
             if v > 1:
                 logging.error("%s jobs named %s" % (v, k))
-        # raise ValueError(
-        #     "Two or more DBricks jobs have non-unique names, which will break CI/CD flow."
-        # )
+        raise ValueError(
+            "Two or more DBricks CI/CD jobs have non-unique names, which will break CI/CD flow."
+        )
 
     return extant_jobs
