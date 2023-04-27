@@ -1,28 +1,14 @@
 name: Pull Request Checks
 
 on: 
-  pull_request: 
-    types: [opened, edited, reopened]
-    
+  pull_request:
+    branches:
+      - 'staging'
+    paths:
+      - 'orchestration/**'
+  
 jobs:
-  python_format:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: Black Formatter
-        uses: psf/black@stable
-
-  unit_tests:
-    needs: python_format
-    runs-on: ubuntu-latest
-    steps:
-      - name: Pytest Goes Here
-        # uses: databricks/run-notebook@v0
-        run: echo "Unit test placeholder"
-
   get_updated_job_files:
-    needs: unit_tests
     runs-on: ubuntu-latest
     environment: development
     outputs:
@@ -52,7 +38,7 @@ jobs:
         run: >
           CICD_TAG=$(curl -L ${{ matrix.job_content }} |
             jq 'tags.workflow')
-          if [ "$CICD_TAG" != "CI/CD" ]
+          if [ $CICD_TAG != "CI/CD" ]
             then
               echo "Job @ ${{ matrix.job_content }} missing required \"workflow: CI/CD\" tag"
               exit 1
