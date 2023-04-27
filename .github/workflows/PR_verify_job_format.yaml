@@ -26,14 +26,21 @@ jobs:
   
   # TODO assure unique job names
 
-  test_job_settings:
-    name: Test Job Settings
+  test_pr_number:
     runs-on: ubuntu-latest
     environment: development
-    needs: get_updated_job_files
+    steps:
+      - run: >
+          echo ${{ github.event.pull_request.number }}
+
+  assure_correct_job_settings:
+    name: Assure Job Settings
+    runs-on: ubuntu-latest
+    environment: development
+    needs: get_job_file_links
     strategy:
       matrix:
-        job_content: ${{ fromJson(needs.get_updated_job_files.outputs.matrix) }}
+        job_content: ${{ fromJson(needs.get_job_file_links.outputs.matrix) }}
     steps:
       - name: Set variables
         id: job_vars
