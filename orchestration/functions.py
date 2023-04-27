@@ -1,5 +1,6 @@
 import json, logging, requests
 from typing import NamedTuple, List
+from hashlib import sha256
 
 from pyspark.sql import SparkSession
 from pyspark.context import SparkContext
@@ -16,6 +17,7 @@ class Job(NamedTuple):
     id: int
     name: str
     settings: dict
+    hash: str
 
 
 def get_repo_jobs(repo: str, path_to_jobs: str, branch: str = "master") -> List[Job]:
@@ -36,25 +38,15 @@ def get_repo_jobs(repo: str, path_to_jobs: str, branch: str = "master") -> List[
 
     assert len(set([j["name"].lower() for j in job_data])) == len(job_data)
 
-    return [Job(id=None, name=job["name"], settings=job) for job in job_data]
-
-
-# def get_job_settings_from_github(repo, filepath: str, branch: str = "master"):
-#     url = f"https://api.github.com/repos/pennfoster/{repo}/contents/{filepath}"
-#     headers = {
-#         "Accept": "application/vnd.github+json",
-#         "X-GitHub-Api-Version": "2022-11-28",
-#     }
-#     response = requests.get(url, headers=headers, params={"ref": branch})
-#     response.raise_for_status()
-
-#     job_data = json.loads(requests.get(response.json()["download_url"]).text)
-
-#     return Job(
-#         id=None,
-#         name=job_data["settings"]["name"],
-#         settings=job_data["settings"],
-#     )
+    return [
+        Job(
+            id=None,
+            name=job["name"],
+            settings=job,
+            hash=sha256(json.dumps(job, sort_keys=True).encode("utf-8")).hexdigest(),
+        )
+        for job in job_data
+    ]
 
 
 def get_current_env_jobs() -> List[Job]:
@@ -82,6 +74,9 @@ def get_current_env_jobs() -> List[Job]:
                 id=job["job_id"],
                 name=job["settings"]["name"],
                 settings=job["settings"],
+                hash=sha256(
+                    json.dumps(job["settings"], sort_keys=True).encode("utf-8")
+                ).hexdigest(),
             )
         )
 
@@ -100,3 +95,21 @@ def get_current_env_jobs() -> List[Job]:
         )
 
     return extant_jobs
+
+
+# def get_job_settings_from_github(repo, filepath: str, branch: str = "master"):
+#     url = f"https://api.github.com/repos/pennfoster/{repo}/contents/{filepath}"
+#     headers = {
+#         "Accept": "application/vnd.github+json",
+#         "X-GitHub-Api-Version": "2022-11-28",
+#     }
+#     response = requests.get(url, headers=headers, params={"ref": branch})
+#     response.raise_for_status()
+
+#     job_data = json.loads(requests.get(response.json()["download_url"]).text)
+
+#     return Job(
+#         id=None,
+#         name=job_data["settings"]["name"],
+#         settings=job_data["settings"],
+#     )
