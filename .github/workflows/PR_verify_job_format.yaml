@@ -39,7 +39,7 @@ jobs:
           DOWNLOAD_URL=$(curl -L "${{ matrix.job_content }}" | jq -r .download_url);
           JOB_VARS=$(curl -L "$DOWNLOAD_URL");
           echo "cicd_tag=$(echo "$JOB_VARS" | jq -r '.tags.workflow')" >> "$GITHUB_OUTPUT";
-          echo "task_filepaths=$(echo "$JOB_VARS" | jq -r '.tasks[].notebook_task.notebook_path')";
+          echo "task_filepaths=$(echo "$JOB_VARS" | jq -c '.tasks[].notebook_task.notebook_path')";
       - name: Assure Correct Tag
         run: >
           if [ "${{ steps.job_vars.outputs.cicd_tag }}" != "CI/CD" ]
@@ -51,7 +51,7 @@ jobs:
           fi
       - name: Assure Correst Filepaths
         run: >
-          for FP in ${{ steps.job_vars.outputs.task_filepaths }}
+          for FP in $(${{ steps.job_vars.outputs.task_filepaths }} | jq -r .[])
           do
               if [[ $FP =~ ^\/Repos\/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}\/.*$ ]]
                   then
