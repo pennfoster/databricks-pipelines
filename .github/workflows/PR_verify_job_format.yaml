@@ -38,7 +38,7 @@ jobs:
         run: >
           DOWNLOAD_URL=$(curl -L "${{ matrix.job_content }}" | jq -r .download_url);
           JOB_VARS=$(curl -L "$DOWNLOAD_URL");
-          echo "job_name=$(echo "$JOB_VARS" | jq -r '.name')" >> "$GITHUB_OUTPUT"
+          echo "job_name=$(echo "$JOB_VARS" | jq -r '.name')" >> "$GITHUB_OUTPUT";
           echo "cicd_tag=$(echo "$JOB_VARS" | jq -r '.tags.workflow')" >> "$GITHUB_OUTPUT";
           echo "task_filepaths='$(echo "$JOB_VARS" | jq -c ['.tasks[].notebook_task.notebook_path'])'" >> "$GITHUB_OUTPUT";
       - name: Assure Correct Tag
