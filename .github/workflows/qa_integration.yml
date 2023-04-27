@@ -3,7 +3,7 @@ name: Update Databricks Jobs
 on:
   push:
     branches:
-      - master
+      - staging
 
 jobs:
   pull_latest_commit:
@@ -57,3 +57,11 @@ jobs:
         run: |
           curl -L -X POST '${{vars.DATABRICKS_HOST}}/api/2.1/jobs/run-now' \
           -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"job_id": "${{ matrix.job_id }}"}'
+
+  start_test_sensore:
+    needs: update_jobs
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - run: >
+          echo ${{ needs.update_jobs.outputs.matrix }}
