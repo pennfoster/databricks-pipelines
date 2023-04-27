@@ -37,9 +37,9 @@ jobs:
       - name: Set variables
         id: job_vars
         run: >
-          JOB_VARS=$(curl -L ${{ matrix.job_content }})
-          echo "cicd_tag=$($JOB_VARS | jq -r '.tags.workflow')" >> "$GITHUB_OUTPUT"
-          echo "task_filepaths=$($JOB_VARS | jq -r ['.tasks.[].notebook_task.notebook_path'])" >> "$GITHUB_OUTPUT"
+          JOB_VARS=$(curl -L ${{ matrix.job_content }});
+          echo "cicd_tag=$(echo "$JOB_VARS" | jq -r '.tags.workflow')" >> "$GITHUB_OUTPUT";
+          echo "task_filepaths=$(echo "$JOB_VARS" | jq -c ['.tasks[].notebook_task.notebook_path'])" >> "$GITHUB_OUTPUT";
       - name: Echo tag
         run: >
           echo ${{ steps.job_vars.outputs.cicd_tag }}
