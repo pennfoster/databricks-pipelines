@@ -8,7 +8,7 @@ from shared.functions.azure_utilities import get_key_vault_scope
 
 jobs_repo = "databricks-pipelines"
 jobs_path = "orchestration/dbricks_jobs"
-jobs_branch = "cicd/test_jobs_in_pr"  # TODO remove
+jobs_branch = "staging"  # TODO remove
 
 # COMMAND ----------
 # DBTITLE 1, Get Extant and New Jobs Metadataz
@@ -17,20 +17,27 @@ jobs_branch = "cicd/test_jobs_in_pr"  # TODO remove
 repo_jobs = get_repo_jobs(jobs_repo, jobs_path, jobs_branch)
 extant_jobs = get_current_env_jobs()
 
-extant_job_names = set([e.name for e in extant_jobs])
-repo_job_names = set([r.name for r in repo_jobs])
+to_be_added = []
+to_be_updated = []
+to_be_removed = []
 
-for job in repo_jobs:
-    for e in extant_jobs:
-        if e.name == job.name:
-            job = job._replace(id=e.id)
+extant_job_hashes = [j.hash for j in extant_jobs]
+extant_job_names = [j.name for j in extant_jobs]
+for repj in repo_jobs:
+    if repj.hash in extant_job_hashes:
+        continue
+    if not repj.name in extant_job_names:
+        to_be_added.append(repj)
+        continue
+    for extj in extant_jobs:
+        if repj.name in extant_job_names:
+            job = repj._replace(id=extj.id)
+            to_be_updated.append(job)
 
-to_be_added = repo_job_names - extant_job_names
-to_be_updated = extant_job_names & repo_job_names
-to_be_deleted = extant_job_names - repo_job_names
-
-# tests whether there are any common jobs in the lists
-assert set(to_be_added).intersection(*[to_be_updated, to_be_deleted]) == set()
+repo_job_names = [j.name for j in repo_jobs]
+for job in extant_jobs:
+    if not job.name in repo_job_names:
+        to_be_removed.append(job)
 
 # COMMAND ----------
 # DBTITLE 1, Destroy, Update, & Create PR Jobs
@@ -42,12 +49,11 @@ session.headers = {
     **session.headers,
     "Authorization": f"Bearer {dbutils.secrets.get(get_key_vault_scope(), 'cicd-access-token')}",
 }
-for job in extant_jobs:
-    if job.name in to_be_deleted:
-        request_body = {"job_id": e.id}
-        response = session.post(f"{url}/delete", json=request_body)
-        response.raise_for_status()
-        print(f"Job {e.id} ({e.name}) deleted.")
+for job in to_be_removed:
+    request_body = {"job_id": job.id}
+    response = session.post(f"{url}/delete", json=request_body)
+    response.raise_for_status()
+    print(f"Job {job.id} ({job.name}) deleted.")
 
 for job in repo_jobs:
     if job.name in to_be_updated:
@@ -56,6 +62,7 @@ for job in repo_jobs:
         response.raise_for_status()
         print(f"Job {job.id} ({job.name}) updated.")
         output_job_ids.append(job.id)
+
     if job.name in to_be_added:
         request_body = job.settings
         response = session.post(f"{url}/create", json=request_body)
