@@ -38,7 +38,7 @@ repo_job_names = [j.name for j in repo_jobs]
 for job in extant_jobs:
     if not job.name in repo_job_names:
         to_be_removed.append(job)
-
+        
 # COMMAND ----------
 # DBTITLE 1, Destroy, Update, & Create PR Jobs
 output_job_ids = []
@@ -49,6 +49,7 @@ session.headers = {
     **session.headers,
     "Authorization": f"Bearer {dbutils.secrets.get(get_key_vault_scope(), 'cicd-access-token')}",
 }
+
 for job in to_be_removed:
     request_body = {"job_id": job.id}
     response = session.post(f"{url}/delete", json=request_body)
@@ -62,7 +63,7 @@ for job in repo_jobs:
         response.raise_for_status()
         print(f"Job {job.id} ({job.name}) updated.")
         output_job_ids.append(job.id)
-
+        
     if job.name in to_be_added:
         request_body = job.settings
         response = session.post(f"{url}/create", json=request_body)
