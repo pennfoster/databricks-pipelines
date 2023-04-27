@@ -8,7 +8,7 @@ on:
       - 'orchestration/**'
   
 jobs:
-  get_updated_job_files:
+  get_job_file_links:
     runs-on: ubuntu-latest
     environment: development
     outputs:
@@ -26,7 +26,8 @@ jobs:
   
   # TODO assure unique job names
 
-  assure_cicd_tag:
+  test_job_settings:
+    name: Test Job Settings
     runs-on: ubuntu-latest
     environment: development
     needs: get_updated_job_files
@@ -39,18 +40,25 @@ jobs:
         run: >
           JOB_VARS=$(curl -L ${{ matrix.job_content }});
           echo "cicd_tag=$(echo "$JOB_VARS" | jq -r '.tags.workflow')" >> "$GITHUB_OUTPUT";
-          echo "task_filepaths=$(echo "$JOB_VARS" | jq -c ['.tasks[].notebook_task.notebook_path'])" >> "$GITHUB_OUTPUT";
+          echo "task_filepaths=$(echo "$JOB_VARS" | jq -cr ['.tasks[].notebook_task.notebook_path'])" >> "$GITHUB_OUTPUT";
       - name: Echo tag
         run: >
           echo ${{ steps.job_vars.outputs.cicd_tag }}
+          if [ "${{ steps.job_vars.outputs.cicd_tag }}" != "CI/CD" ]
+            then
+              echo $CICD_TAG
+              echo "CI/CD"
+              echo "Job @ ${{ matrix.job_content }} missing required \"workflow: CI/CD\" tag"
+              exit 1
+          fi
       - name: Echo filepaths
         run: >
           echo ${{ steps.job_vars.outputs.task_filepaths }}
-    
-# if [ "$CICD_TAG" != "CI/CD" ]
-#   then
-#     echo $CICD_TAG
-#     echo "CI/CD"
-#     echo "Job @ ${{ matrix.job_content }} missing required \"workflow: CI/CD\" tag"
-#     exit 1
-# fi
+          for FP in ${{ steps.job_vars.outputs.task_filepaths }}
+          do
+              if [[ $FP =~ ^\/Repos\/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}\/.*$ ]]
+                  then
+                  echo "Notebook filepath is set to personal workspace"
+                  exit 1
+              fi
+          done
