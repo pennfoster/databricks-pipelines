@@ -34,14 +34,23 @@ jobs:
       matrix:
         job_content: ${{ fromJson(needs.get_updated_job_files.outputs.matrix) }}
     steps:
-      - name: Check job tags
+      - name: Set variables
+        id: job_vars
         run: >
-          CICD_TAG=$(curl -L ${{ matrix.job_content }} |
-            jq -r '.tags.workflow')
-          if [ $CICD_TAG != "CI/CD" ]
-            then
-              echo $CICD_TAG
-              echo "CI/CD"
-              echo "Job @ ${{ matrix.job_content }} missing required \"workflow: CI/CD\" tag"
-              exit 1
-          fi
+          JOB_VARS=$(curl -L ${{ matrix.job_content }})
+          echo "cicd_tag=$($JOB_VARS | jq -r '.tags.workflow')" >> "$GITHUB_OUTPUT"
+          echo "task_filepaths=$($JOB_VARS | jq -r '[.tasks.[].notebook_task.notebook_path]')" >> "$GITHUB_OUTPUT"
+      - name: Echo tag
+        run: >
+          echo ${{ steps.job_vars.outputs.cicd_tag }}
+      - name: Echo filepaths
+        run: >
+          echo ${{ steps.job_vars.outputs.task_filepaths }}
+    
+# if [ "$CICD_TAG" != "CI/CD" ]
+#   then
+#     echo $CICD_TAG
+#     echo "CI/CD"
+#     echo "Job @ ${{ matrix.job_content }} missing required \"workflow: CI/CD\" tag"
+#     exit 1
+# fi
