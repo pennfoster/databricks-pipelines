@@ -1,17 +1,16 @@
 name: PR - On Approval DBricks Reminder
 
 on:
+  pull_request
   # pull_request_review:
   #   types:
   #     - 'submitted'
-  pull_request
 
 jobs:
   staging_comment:
     name: Staging Comment
-    # if: |
-    #   github.event.review.state == 'approved' ||
-    #   startswith(github.event.pull_request.base.ref, 'staging')
+    if: startswith(github.event.pull_request.base.ref, 'staging')
+      # github.event.review.state == 'approved' ||
     environment: staging
     runs-on: ubuntu-latest
     steps:
@@ -23,14 +22,14 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Workflow comment test'
+              body: '🔔 Before merging to go ${{ vars.DATABRICKS_REPO_URL }} to ensure DBricks Repo is able to pull 🔔'
             })
 
   # release_comment:
   #   name: Release Comment
-  #   # if: |
-  #   #   github.event.review.state == 'approved' ||
-  #   #   startswith(github.event.pull_request.base.ref, 'release')
+  #   if: |
+  #     github.event.review.state == 'approved' ||
+  #     startswith(github.event.pull_request.base.ref, 'release')
   #   environment: production
   #   runs-on: ubuntu-latest
   #   steps:
