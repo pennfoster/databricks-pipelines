@@ -4,7 +4,7 @@ on:
   # pull_request_review:
   #   types:
   #     - 'submitted'
-  issue_comment
+  pull_request
 
 jobs:
   staging_comment:
@@ -15,20 +15,26 @@ jobs:
     environment: staging
     runs-on: ubuntu-latest
     steps:
-      - uses: thollander/actions-comment-pull-request@v2
+      - uses: actions/github-script@v6
         with:
-          message: |
-            Before merging to go ${{ vars.DATABRICKS_REPO_URL }} to ensure DBricks Repo is able to pull.
+          # github_token:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Workflow comment test'
+            })
 
-  release_comment:
-    name: Release Comment
-    # if: |
-    #   github.event.review.state == 'approved' ||
-    #   startswith(github.event.pull_request.base.ref, 'release')
-    environment: production
-    runs-on: ubuntu-latest
-    steps:
-      - uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            Before merging to go ${{ vars.DATABRICKS_REPO_URL }} to ensure DBricks Repo is able to pull.
+  # release_comment:
+  #   name: Release Comment
+  #   # if: |
+  #   #   github.event.review.state == 'approved' ||
+  #   #   startswith(github.event.pull_request.base.ref, 'release')
+  #   environment: production
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: thollander/actions-comment-pull-request@v2
+  #       with:
+  #         message: |
+  #           Before merging to go ${{ vars.DATABRICKS_REPO_URL }} to ensure DBricks Repo is able to pull.
