@@ -47,6 +47,7 @@ jobs:
 
   trigger_jobs:
     needs: update_jobs
+    if: ${{ needs.update_jobs.outputs.matrix != '' && toJson(fromJson(needs.update_jobs.outputs.matrix)) != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:

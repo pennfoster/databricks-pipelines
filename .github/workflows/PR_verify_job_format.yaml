@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     needs: get_job_file_links
+    if: ${{ needs.get_job_file_links.outputs.matrix != '' && toJson(fromJson(needs.get_job_file_links.outputs.matrix)) != '[]' }}
     strategy:
       matrix:
         job_content: ${{ fromJson(needs.get_job_file_links.outputs.matrix) }}
@@ -48,7 +49,7 @@ jobs:
               echo "Job ${{ steps.job_vars.outputs.job_name }} is missing required \"workflow: CI/CD\" tag";
               exit 1;
           fi
-      - name: Assure Correst Filepaths
+      - name: Assure Correct Filepaths
         run: >
           for FP in $(echo ${{ steps.job_vars.outputs.task_filepaths }} | jq -r .[]);
             do

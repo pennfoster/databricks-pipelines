@@ -1,0 +1,34 @@
+name: PR - On Approval DBricks Reminder
+
+on:
+  # pull_request_review:
+  #   types:
+  #     - 'submitted'
+  issue_comment
+
+jobs:
+  staging_comment:
+    name: Staging Comment
+    # if: |
+    #   github.event.review.state == 'approved' ||
+    #   startswith(github.event.pull_request.base.ref, 'staging')
+    environment: staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            Before merging to go ${{ vars.DATABRICKS_REPO_URL }} to ensure DBricks Repo is able to pull.
+
+  release_comment:
+    name: Release Comment
+    # if: |
+    #   github.event.review.state == 'approved' ||
+    #   startswith(github.event.pull_request.base.ref, 'release')
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            Before merging to go ${{ vars.DATABRICKS_REPO_URL }} to ensure DBricks Repo is able to pull.
