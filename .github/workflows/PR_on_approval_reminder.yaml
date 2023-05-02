@@ -1,16 +1,16 @@
 name: PR - On Approval DBricks Reminder
 
 on:
-  pull_request
-  # pull_request_review:
-  #   types:
-  #     - 'submitted'
+  pull_request_review:
+    types:
+      - 'submitted'
 
 jobs:
   staging_comment:
     name: Staging Comment
-    if: startswith(github.event.pull_request.base.ref, 'staging')
-      # github.event.review.state == 'approved' ||
+    if: |
+      github.event.review.state == 'approved' ||
+      startswith(github.event.pull_request.base.ref, 'staging')
     environment: staging
     runs-on: ubuntu-latest
     steps:
@@ -22,18 +22,24 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🔔 Before merging to go ${{ vars.DATABRICKS_REPO_URL }} to ensure DBricks Repo is able to pull 🔔'
+              body: '🔔 Before merging to go the [${{ vars.DATABRICKS_REPO_URL }}](DBricks Repo) to ensure there are no pending changes and API pull will be successful 🔔'
             })
 
-  # release_comment:
-  #   name: Release Comment
-  #   if: |
-  #     github.event.review.state == 'approved' ||
-  #     startswith(github.event.pull_request.base.ref, 'release')
-  #   environment: production
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: thollander/actions-comment-pull-request@v2
-  #       with:
-  #         message: |
-  #           Before merging to go ${{ vars.DATABRICKS_REPO_URL }} to ensure DBricks Repo is able to pull.
+  release_comment:
+    name: Release Comment
+    if: |
+      github.event.review.state == 'approved' ||
+      startswith(github.event.pull_request.base.ref, 'release')
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          # github_token:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🔔 Before merging to go the [${{ vars.DATABRICKS_REPO_URL }}](DBricks Repo) to ensure there are no pending changes and API pull will be successful 🔔'
+            })
