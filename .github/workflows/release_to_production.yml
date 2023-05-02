@@ -20,7 +20,7 @@ jobs:
   
   update_jobs:
     needs: pull_latest_commit
-    runs-on: ubuntu-latest\
+    runs-on: ubuntu-latest
     environment: production
     env:
       DATABRICKS_HOST: ${{vars.DATABRICKS_HOST}}
