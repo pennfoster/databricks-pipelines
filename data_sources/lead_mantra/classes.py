@@ -120,7 +120,7 @@ class LeadMantraREST(RESTBase):
             output = await response.json()
             return output["campaign_leads"]
 
-    @RESTBase.retry
+    @RESTBase.async_retry
     async def get_lead_asset(
         self,
         endpoint: str,
