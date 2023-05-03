@@ -39,11 +39,11 @@ jobs:
               "spark_version": "11.3.x-scala2.12",
               "node_type_id": "Standard_F4"
             }
-          libraries-json: >
-            [
-              {"pypi": "aiohttp"},
-              {"pypi": "pendulum"}
-            ]
+          # libraries-json: >
+          #   [
+          #     {"pypi": "aiohttp"},
+          #     {"pypi": "pendulum"}
+          #   ]
           notebook-params-json: >
             [
               {"key": "jobs_branch", "value": "staging"}
