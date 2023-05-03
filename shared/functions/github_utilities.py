@@ -1,8 +1,32 @@
 import requests
 from typing import List, Tuple, Literal
 
+from shared.functions.azure_utilities import get_key_vault_scope
 
-# TODO needs auth
+
+def get_current_repo_branch():
+    filepath = (
+        dbutils.notebook.entry_point.getDbutils()
+        .notebook()
+        .getContext()
+        .notebookPath()
+        .get()
+    )
+
+    repo_path = filepath.rsplit("/", 3)[0]
+    url = f"{sc.getConf().get('spark.databricks.workspaceUrl')}/api/2.0/repos"
+    access_token = dbutils.secrets.get(get_key_vault_scope(), "cicd-access-token")
+    response = requests.get(url, headers={"Authorization": f"Bearer {access_token}"})
+    response.raise_for_status()
+    for repo in response.json()["repos"]:
+        if repo["path"].startswith(repo_path):
+            return repo["branch"]
+
+
+print(get_current_repo_branch())
+
+
+# ! This code is no longer inuse and can be deprecated. Left here in case for now. (2023-04-24 Noam Blanks)
 def get_pr_files(
     repo: str, pr_number: int, directory_path: str = None
 ) -> List[
@@ -43,6 +67,3 @@ def get_pr_files(
     if directory_path:
         changed_files = [t for t in changed_files if t[0].startswith(directory_path)]
     return changed_files
-
-
-# TODO trigger runs for any files that have changes logged.
