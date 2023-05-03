@@ -41,8 +41,8 @@ jobs:
             }
           libraries-json: >
             [
-              {"package": "aiohttp"},
-              {"package": "pendulum"}
+              {"pypi": "aiohttp"},
+              {"pypi": "pendulum"}
             ]
           notebook-params-json: >
             [
