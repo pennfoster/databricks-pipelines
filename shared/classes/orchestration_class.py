@@ -61,6 +61,7 @@ class Orchestration(RESTBase):
             job_settings = [
                 json.loads(s.get(file["download_url"]).text)
                 for file in job_files.json()
+                if file["name"].endswith(".json")
             ]
 
         # TODO: Move this to a _helper method
