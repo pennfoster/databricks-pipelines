@@ -42,5 +42,8 @@
             }
         }
     ],
+    "tags": {
+        "workflow": "CI/CD"
+    },
     "format": "MULTI_TASK"
 }
