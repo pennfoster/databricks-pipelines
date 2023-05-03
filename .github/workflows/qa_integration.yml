@@ -1,12 +1,13 @@
 name: QA - Update and Trigger Jobs in Staging
 
 on:
-  push:
-    branches:
-      - staging
+  pull_request:
+    types: closed
+    branches: staging
 
 jobs:
   pull_latest_commit_to_dbricks:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: staging
     steps:
