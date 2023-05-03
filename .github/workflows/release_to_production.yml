@@ -34,7 +34,7 @@ jobs:
           workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
           notebook-params-json: >
             [
-              {"jobs_branch": "${{ github.base_ref }}"}
+              {"key": "jobs_branch", "value": "${{ github.base_ref }}"}
             ]
           new-cluster-json: >
             {

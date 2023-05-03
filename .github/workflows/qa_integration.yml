@@ -35,7 +35,7 @@ jobs:
         with:
           notebook-params-json: >
             [
-              {"jobs_branch": "staging"}
+              {"key": "jobs_branch", "value": "staging"}
             ]
           workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
           new-cluster-json: >
