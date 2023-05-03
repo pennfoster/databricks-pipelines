@@ -195,9 +195,7 @@ class Orchestration(RESTBase):
             headers=self.dbricks_auth_header,
             json={"job_id": job_id},
         )
-        print(response.json())
-        print(response.request.body)
-        print(response.request.headers)
+
         self.raise_for_status(response)
 
     def update_job(self, job_id: int, job_settings: dict):
