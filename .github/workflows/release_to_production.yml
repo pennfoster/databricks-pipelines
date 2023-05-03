@@ -1,34 +1,41 @@
+name: PR - Release Code to Production
+
 on:
-  release:
-    types: [published, unpublished, deleted]
+  pull_request:
+    types: closed
+    branches: [main, master]
 
 jobs:
   pull_latest_commit:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    #! environment: production
-    environment: development
+    environment: production
     steps:
       - name: Update Production Repo
         run: |
           curl -L -X PATCH '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
-          -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"branch": "master"}'
+            -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' \
+            -H 'Content-Type: application/json' \
+            -d '{"branch": "${{ github.base_ref }}"}'
   
   update_jobs:
     needs: pull_latest_commit
     runs-on: ubuntu-latest
-    environment: staging
+    environment: production
     env:
       DATABRICKS_HOST: ${{vars.DATABRICKS_HOST}}
       DATABRICKS_TOKEN: ${{secrets.DATABRICKS_TOKEN}}
-    outputs:
-      matrix: ${{ steps.update_jobs.outputs.notebook-output }}
     steps:
-# Documentation for Databricks specific actions found @ https://github.com/databricks/run-notebook/blob/main/action.yml    
+    # Documentation for Databricks specific actions found @ https://github.com/databricks/run-notebook/blob/main/action.yml    
       - name: Update jobs
         id: update_jobs
         uses: databricks/run-notebook@v0
         with:
           workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
+          notebook-params-json: >
+            [
+              {"jobs_branch": "${{ github.base_ref }}"}
+            ]
           new-cluster-json: >
             {
               "num_workers": 1,

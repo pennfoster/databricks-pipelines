@@ -6,17 +6,20 @@ on:
       - staging
 
 jobs:
-  pull_latest_commit:
+  pull_latest_commit_to_dbricks:
     runs-on: ubuntu-latest
     environment: staging
     steps:
       - name: API post request
         run: |
-          curl -L -X PATCH '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
-          -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"branch": "staging"}'
+          curl \
+            -L -X PATCH '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
+            -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' \
+            -H 'Content-Type: application/json' \
+            -d '{"branch": "staging"}'
   
   update_jobs:
-    needs: pull_latest_commit
+    needs: pull_latest_commit_to_dbricks
     runs-on: ubuntu-latest
     environment: staging
     env:
@@ -30,6 +33,10 @@ jobs:
         id: update_jobs
         uses: databricks/run-notebook@v0
         with:
+          notebook-params-json: >
+            [
+              {"jobs_branch": "staging"}
+            ]
           workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
           new-cluster-json: >
             {
@@ -47,6 +54,7 @@ jobs:
 
   trigger_jobs:
     needs: update_jobs
+    if: ${{ needs.update_jobs.outputs.matrix != '' && toJson(fromJson(needs.update_jobs.outputs.matrix)) != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -55,35 +63,35 @@ jobs:
     steps:
       - name: Trigger Job n
         run: |
-          curl -L -X POST '${{vars.DATABRICKS_HOST}}/api/2.1/jobs/run-now' \
-          -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' -H 'Content-Type: application/json' -d '{"job_id": "${{ matrix.job_id }}"}'
+          curl \
+            -L -X POST '${{vars.DATABRICKS_HOST}}/api/2.1/jobs/run-now' \
+            -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' \
+            -H 'Content-Type: application/json' \
+            -d '{"job_id": "${{ matrix.job_id }}"}'
 
-  # start_test_sensor:
-  #   needs: update_jobs
-  #   runs-on: ubuntu-latest
-  #   environment: staging
-  #   env:
-  #     DATABRICKS_HOST: ${{vars.DATABRICKS_HOST}}
-  #     DATABRICKS_TOKEN: ${{secrets.DATABRICKS_TOKEN}}
-  #   steps:
-  #     - name: Trigger test sensor
-  #       run: >
-  #         echo ${{ needs.update_jobs.outputs.matrix }}
-  #             id: update_jobs
-  #             uses: databricks/run-notebook@v0
-  #             with:
-  #               workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
-  #               new-cluster-json: >
-  #                 {
-  #                   "num_workers": 1,
-  #                   "spark_version": "11.3.x-scala2.12",
-  #                   "node_type_id": "Standard_F4"
-  #                 }
-  #               access-control-list-json: >
-  #                 [
-  #                   {
-  #                     "group_name": "users",
-  #                     "permission_level": "CAN_VIEW"
-  #                   }
-  #                 ]
-  #          echo ${{ needs.update_jobs.outputs.matrix }}
+  start_test_sensor:
+    needs: update_jobs
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      DATABRICKS_HOST: ${{vars.DATABRICKS_HOST}}
+      DATABRICKS_TOKEN: ${{secrets.DATABRICKS_TOKEN}}
+    steps:
+      - name: Trigger test sensor
+        id: update_jobs
+        uses: databricks/run-notebook@v0
+        with:
+          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/integration_testing_handler.py
+          new-cluster-json: >
+            {
+              "num_workers": 1,
+              "spark_version": "11.3.x-scala2.12",
+              "node_type_id": "Standard_F4"
+            }
+          access-control-list-json: >
+            [
+              {
+                "group_name": "users",
+                "permission_level": "CAN_VIEW"
+              }
+            ]
