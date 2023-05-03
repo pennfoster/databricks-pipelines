@@ -1,25 +1,26 @@
 # Databricks notebook source
 # DBTITLE 1, Setup
 import json
-import requests
+from typing import List
 
-from orchestration.functions import get_current_env_jobs, get_repo_jobs
-from shared.functions.azure_utilities import get_key_vault_scope
+from shared.classes import Orchestration, Job
 
 jobs_repo = "databricks-pipelines"
 jobs_path = "orchestration/dbricks_jobs"
-jobs_branch = "staging"  # TODO remove
+
+dbutils.widgets.text("jobs_branch", defaultValue="staging")
+jobs_branch = dbutils.widgets.get("jobs_branch")
 
 # COMMAND ----------
 # DBTITLE 1, Get Extant and New Jobs Metadataz
 
+orch = Orchestration()
+repo_jobs = orch.get_repo_jobs(jobs_repo, jobs_path, jobs_branch)
+extant_jobs = orch.get_current_env_jobs()
 
-repo_jobs = get_repo_jobs(jobs_repo, jobs_path, jobs_branch)
-extant_jobs = get_current_env_jobs()
-
-to_be_added = []
-to_be_updated = []
-to_be_removed = []
+to_be_added: List[Job] = []
+to_be_updated: List[Job] = []
+to_be_removed: List[Job] = []
 
 extant_job_hashes = [j.hash for j in extant_jobs]
 extant_job_names = [j.name for j in extant_jobs]
@@ -30,7 +31,7 @@ for repj in repo_jobs:
         to_be_added.append(repj)
         continue
     for extj in extant_jobs:
-        if repj.name in extant_job_names:
+        if repj.name == extj.name:
             job = repj._replace(id=extj.id)
             to_be_updated.append(job)
 
@@ -43,36 +44,22 @@ for job in extant_jobs:
 # DBTITLE 1, Destroy, Update, & Create PR Jobs
 output_job_ids = []
 
-session = requests.Session()
-url = f"https://{sc.getConf().get('spark.databricks.workspaceUrl')}/api/2.1/jobs"
-session.headers = {
-    **session.headers,
-    "Authorization": f"Bearer {dbutils.secrets.get(get_key_vault_scope(), 'cicd-access-token')}",
-}
-
 for job in to_be_removed:
-    request_body = {"job_id": job.id}
-    response = session.post(f"{url}/delete", json=request_body)
-    response.raise_for_status()
+    orch.delete_job(job.id)
     print(f"Job {job.id} ({job.name}) deleted.")
 
 for job in to_be_updated:
-    request_body = {"job_id": job.id, "new_settings": job.settings}
-    response = session.post(f"{url}/update", json={"job_id": job.id})
-    response.raise_for_status()
-    print(f"Job {job.id} ({job.name}) updated.")
+    orch.update_job(job.id, job.settings)
     output_job_ids.append(job.id)
+    print(f"Job {job.id} ({job.name}) updated.")
 
 for job in to_be_added:
-    request_body = job.settings
-    response = session.post(f"{url}/create", json=request_body)
-    response.raise_for_status()
-    print(f"Job {response.json()['job_id']} ({job.name}) created.")
-    output_job_ids.append(job.id)
+    new_job_id = orch.create_job(job.settings)
+    output_job_ids.append(new_job_id)
+    print(f"Job {new_job_id} ({job.name}) created.")
 
 
 # COMMAND ----------
 # DBTITLE 1, Output Updated Job IDs JSON String
 
-session.close()
 dbutils.notebook.exit(json.dumps(output_job_ids))
