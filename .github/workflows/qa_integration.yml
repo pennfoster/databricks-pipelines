@@ -33,22 +33,22 @@ jobs:
         id: update_jobs
         uses: databricks/run-notebook@v0
         with:
-          libraries-json: >
-            [
-              {"pypi": "aiohttp"},
-              {"pypi": "pendulum"}
-            ]
-          notebook-params-json: >
-            [
-              {"key": "jobs_branch", "value": "staging"}
-            ]
-          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
           new-cluster-json: >
             {
               "num_workers": 1,
               "spark_version": "11.3.x-scala2.12",
               "node_type_id": "Standard_F4"
             }
+          libraries-json: >
+            [
+              {"package": "aiohttp"},
+              {"package": "pendulum"}
+            ]
+          notebook-params-json: >
+            [
+              {"key": "jobs_branch", "value": "staging"}
+            ]
+          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
           access-control-list-json: >
             [
               {
