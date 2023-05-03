@@ -33,6 +33,11 @@ jobs:
         id: update_jobs
         uses: databricks/run-notebook@v0
         with:
+          libraries-json: >
+            [
+              {"pypi": "aiohttp==3.8.4"},
+              {"pypi": "pendulum==2.1.2"}
+            ]
           notebook-params-json: >
             [
               {"key": "jobs_branch", "value": "staging"}
