@@ -35,8 +35,8 @@ jobs:
         with:
           libraries-json: >
             [
-              {"package": "aiohttp==3.8.4"},
-              {"package": "pendulum==2.1.2"}
+              {"package": "aiohttp"},
+              {"package": "pendulum"}
             ]
           notebook-params-json: >
             [
