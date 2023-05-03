@@ -90,7 +90,7 @@ jobs:
         id: update_jobs
         uses: databricks/run-notebook@v0
         with:
-          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/integration_testing_handler.py
+          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/integration_testing_handler
           libraries-json: >
             [
               {"pypi": {"package": "aiohttp==3.8.4"}},
