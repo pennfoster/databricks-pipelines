@@ -1,7 +1,4 @@
 # Databricks notebook source
-# MAGIC %pip install aiohttp==3.8.4
-# MAGIC %pip install pendulum==2.1.2
-# COMMAND ----------
 # DBTITLE 1, Setup
 import json
 from typing import List

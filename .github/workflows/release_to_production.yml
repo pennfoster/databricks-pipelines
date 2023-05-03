@@ -32,6 +32,11 @@ jobs:
         uses: databricks/run-notebook@v0
         with:
           workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
+          libraries-json: >
+            [
+              {"pypi": {"package": "aiohttp"}},
+              {"pypi": {"package": "pendulum"}}
+            ]
           notebook-params-json: >
             [
               {"key": "jobs_branch", "value": "${{ github.base_ref }}"}
