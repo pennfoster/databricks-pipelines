@@ -20,6 +20,19 @@ for table_directory in dbutils.fs.ls(raw_path):
             header=True,
         )
 
+    from pyspark.sql import DataFrame
+    from pyspark.sql.functions import current_timestamp
+
+    from shared.functions.github_utilities import get_current_repo_branch
+
+    def insert_bronze_metadata_columns(df: DataFrame):
+        df = df.withColumns(
+            {
+                "_bronze_insert_ts": current_timestamp(),
+                "_repo_branch": get_current_repo_branch(),
+            }
+        )
+
     bronze_dest = f"{get_mount_paths(DATA_SOURCE).bronze}/{table_directory.name}"
     df.write.format("delta").mode("append").option("mergeSchema", True).option(
         "overwriteSchema",

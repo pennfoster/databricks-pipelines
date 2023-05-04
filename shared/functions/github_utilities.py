@@ -1,6 +1,14 @@
 import requests
 from typing import List, Tuple, Literal
 
+from pyspark.sql import SparkSession
+from pyspark.context import SparkContext
+from pyspark.dbutils import DBUtils
+
+spark = SparkSession.builder.getOrCreate()
+sc = SparkContext.getOrCreate()
+dbutils = DBUtils(spark)
+
 from shared.functions.azure_utilities import get_key_vault_scope
 
 
@@ -21,9 +29,6 @@ def get_current_repo_branch():
     for repo in response.json()["repos"]:
         if repo["path"].startswith(repo_path):
             return repo["branch"]
-
-
-print(get_current_repo_branch())
 
 
 # ! This code is no longer inuse and can be deprecated. Left here in case for now. (2023-04-24 Noam Blanks)
