@@ -3,7 +3,7 @@ import requests
 from pyspark.context import SparkContext
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import current_timestamp, input_file_name
+from pyspark.sql.functions import current_timestamp, input_file_name, lit
 
 spark = SparkSession.builder.getOrCreate()
 sc = SparkContext.getOrCreate()
@@ -17,7 +17,7 @@ def insert_bronze_metadata_columns(df: DataFrame):
         {
             "_bronze_insert_ts": current_timestamp(),
             "_raw_file_source": input_file_name(),
-            "_code_version": get_current_repo_branch(),
+            "_code_version": lit(get_current_repo_branch()),
         }
     )
 
