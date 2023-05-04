@@ -22,7 +22,7 @@ def get_current_repo_branch():
     )
 
     repo_path = filepath.rsplit("/", 3)[0]
-    url = f"{sc.getConf().get('spark.databricks.workspaceUrl')}/api/2.0/repos"
+    url = f"https://{sc.getConf().get('spark.databricks.workspaceUrl')}/api/2.0/repos"
     access_token = dbutils.secrets.get(get_key_vault_scope(), "cicd-access-token")
     response = requests.get(url, headers={"Authorization": f"Bearer {access_token}"})
     response.raise_for_status()
