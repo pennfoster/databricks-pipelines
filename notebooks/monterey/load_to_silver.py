@@ -53,15 +53,3 @@ display(df.distinct().orderBy(["ClassAccount", "ContractID", "PaymentEffectiveDa
 # MAGIC and classaccount=503087010
 # MAGIC and acctnumber =8767
 # MAGIC and paymenteffectivedate='2020-05-01'
-
-# COMMAND ----------
-
-from pyspark.sql.functions import current_timestamp
-
-display(df.withColumn("ts", current_timestamp()))
-
-# COMMAND ----------
-
-from shared.functions.github_utilities import get_current_repo_branch
-
-# COMMAND ----------
