@@ -1,4 +1,6 @@
 import requests
+
+import pendulum
 from pyspark.context import SparkContext
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession, DataFrame, Window, Column
@@ -21,7 +23,7 @@ from shared.functions.azure_utilities import get_key_vault_scope
 def add_insert_data(df: DataFrame):
     return df.withColumns(
         {
-            "_bronze_insert_ts": current_timestamp(),
+            "_bronze_insert_ts": lit(pendulum.now()),
             "_raw_file_source": input_file_name(),
             "_code_version": lit(get_current_repo_branch()),
         }

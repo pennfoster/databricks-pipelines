@@ -5,7 +5,6 @@ from shared.functions.metadata_utilities import (
     add_data_version_flags,
 )
 
-dbutils.fs.mv()
 DATA_SOURCE = "monterey"
 root_raw_path = get_mount_paths(DATA_SOURCE).landing
 
@@ -50,7 +49,7 @@ for table_name, columns in table_variables.items():
 
     # Union existing with new
     dirty_bronze_df = spark.read.load(bronze_dest_path, "delta").unionByName(
-        df_w_insert_data, allowMissingColumns=True
+        raw_df, allowMissingColumns=True
     )
 
     # ? df_w_insert_data.write.format("delta").mode("append").option(
