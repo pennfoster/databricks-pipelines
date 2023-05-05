@@ -1,36 +1,77 @@
 # Databricks notebook source
 from shared.functions.azure_utilities import get_mount_paths
-from shared.functions.metadata_utilities import insert_bronze_metadata_columns
+from shared.functions.metadata_utilities import (
+    add_insert_data,
+    add_data_version_flags,
+)
 
 DATA_SOURCE = "monterey"
-raw_path = get_mount_paths(DATA_SOURCE).landing
+root_raw_path = get_mount_paths(DATA_SOURCE).landing
 
 # COMMAND -----
-for table_directory in dbutils.fs.ls(raw_path):
+table_variables = {
+    "Declines": {
+        "uid_list": [
+            "ClassAccount",
+            "ContractID",
+            "AcctNumber",
+        ],
+        "intertnal_date_column": "PaymentEffectiveDate",
+    },
+    "Transactions": {
+        "uid_list": [
+            "ClassAccount",
+            "ContractID",
+            "AcctNumber",
+        ],
+        "intertnal_date_column": "PaymentEffectiveDate",
+    },
+}
+
+# COMMAND -----
+for table_name, columns in table_variables.items():
+    # get new files
+    raw_source_path = f"{root_raw_path}/{table_name}"
     csv_files = [
         file.path
-        for file in dbutils.fs.ls(table_directory.path)
+        for file in dbutils.fs.ls(raw_source_path)
         if file.path.endswith(".csv")
     ]
-
     if not csv_files:
         continue
-    if csv_files:
-        csv_files.sort()
-        df = spark.read.csv(
-            path=csv_files,
-            header=True,
-        )
-    df_w_metadata = insert_bronze_metadata_columns(df)
 
-    bronze_dest = f"{get_mount_paths(DATA_SOURCE).bronze}/{table_directory.name}"
-    df_w_metadata.write.format("delta").mode("append").option(
+    # create staging df
+    csv_files.sort()
+    raw_df = spark.read.csv(path=csv_files, header=True)
+    df_w_insert_data = add_insert_data(raw_df)
+
+    # append to bronze and add metadata
+    bronze_dest_path = f"{get_mount_paths(DATA_SOURCE).bronze}/{table_name}"
+    df_w_insert_data.write.format("delta").mode("append").option(
         "mergeSchema", True
-    ).option("overwriteSchema", True,).save(bronze_dest)
+    ).option("overwriteSchema", True,).save(bronze_dest_path)
 
-    processed_dest = f"{table_directory.path}/processed"
-    dbutils.fs.mkdirs(processed_dest)
+    dirty_bronze_df = spark.read.load(bronze_dest_path, "delta")
+
+    versioned_df = add_data_version_flags(
+        df=dirty_bronze_df,
+        intertnal_date_column=columns["intertnal_date_column"],
+        uid_columns=columns["uid_list"],
+        meta_date_column="_bronze_insert_ts",
+    )
+
+    cleaned_bronze_df = dirty_bronze_df.filter(
+        ("_initial_data_for_date" == True)
+        | ("_most_recent_data_for_date" == True)
+        | ("_deleted_at_source" == True)
+    )
+
+    #! Is overwriting here correct? Should table be edited in place instead?
+    cleaned_bronze_df.write.format("delta").mode("overwrite").save(bronze_dest_path)
+
+    processed_path = f"{raw_source_path}/processed"
+    dbutils.fs.mkdirs(processed_path)
     for file in csv_files:
-        dbutils.fs.mv(file, processed_dest)
+        dbutils.fs.mv(file, processed_path)
 
-    print(f"{table_directory.name} complete")
+    print(f"{table_name} complete")
