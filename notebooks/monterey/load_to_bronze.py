@@ -16,6 +16,7 @@ for table_directory in dbutils.fs.ls(raw_path):
     if not csv_files:
         continue
     if csv_files:
+        csv_files.sort()
         df = spark.read.csv(
             path=csv_files,
             header=True,
