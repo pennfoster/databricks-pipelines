@@ -5,24 +5,21 @@ from shared.functions.azure_utilities import get_mount_paths
 
 mnt = get_mount_paths("monterey")
 
+for table_name in mnt.bronze:
+    bronze_path = f"{mnt.bronze}/{table_name}"
+    silver_path = f"{mnt.silver}/{table_name}"
+
+    bronze_table = spark.read.load(path=bronze_path, format="delta")
 # COMMAND ----------
+#   select distinct
+#      *
+#   from bronze
+#   excluding fp, branch
+#   where ts = max(ts) over (partition by non-metadata)
+#
 
-table = "Declines"
-bronze_table = f"{mnt.bronze}/Declines"
-print(bronze_table)
 
-# COMMAND ----------
-
-df = spark.read.format("delta").load(bronze_table)
-df.distinct().count()
-
-# COMMAND ----------
-
-display(df)
-
-# COMMAND ----------
-
-display(df.distinct().orderBy(["ClassAccount", "ContractID", "PaymentEffectiveDate"]))
+# display(df.distinct().orderBy(["ClassAccount", "ContractID", "PaymentEffectiveDate"]))
 
 
 # COMMAND ----------
