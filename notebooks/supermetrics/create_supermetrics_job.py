@@ -8,7 +8,7 @@ from data_sources.supermetrics.functions import get_url_dataframe, save_json
 NAME = "supermetrics_loads"
 ENV = "dev"
 CLUSTER_ID = "0412-221025-lwdq2fc5"
-NOTEBOOK_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/supermetrics_loader_wip"
+NOTEBOOK_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/supermetrics_load_to_bronze"
 EMAIL_NOTIFICATIONS = {
     "on_success": [],
     "on_failure": ["bhorn@pennfoster.edu"],

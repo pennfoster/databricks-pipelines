@@ -6,9 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from pytz import timezone
 
+from pyspark.sql.functions import current_timestamp, lit
+
 from data_sources.supermetrics.classes import Supermetrics
 from data_sources.supermetrics.functions import get_url_dataframe, save_json, load_json
-from shared.constants import COMPANY_TIMEZONE
 
 # COMMAND -----
 dbutils.widgets.dropdown("environment", "dev", ["dev", "prd"])
@@ -75,17 +76,19 @@ for file in unprocessed:
     data = resp_json["data"][1:]
 
     df = pd.DataFrame(columns=cols, data=data)
-    df["raw_file_path"] = json_path
-    df["raw_file_name"] = json_path.split("/")[-1]
-    tz = timezone(COMPANY_TIMEZONE)
-    df["record_insert_date"] = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+    # df["raw_file_path"] = json_path
+    # df["raw_file_name"] = json_path.split("/")[-1]
+    # tz = timezone(COMPANY_TIMEZONE)
+    # df["record_insert_date"] = datetime.now(tz).strftime("%Y-%m-%dT%H:%M:%S")
     df = df.applymap(str)
 
     sparkdf = spark.createDataFrame(df)
-    sparkdf.write.format("delta").mode("append").option("mergeSchema", True).option(
-        "overwriteSchema",
-        True,
-    ).save(f"{bronze_dir}/{search_name}_{query_name}")
+    sparkdf = sparkdf.withColumn(
+        "__etl_record_insert_date", current_timestamp()
+    ).withColumn("__etl_source_file_path", json_path)
+    sparkdf.write.format("delta").mode("append").partitionBy("date").option(
+        "mergeSchema", True
+    ).option("overwriteSchema", True).save(f"{bronze_dir}/{search_name}_{query_name}")
 
     processed_dir = f"{raw_dir}/processed"
     Path(processed_dir).mkdir(parents=True, exist_ok=True)
