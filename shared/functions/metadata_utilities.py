@@ -1,5 +1,4 @@
 import requests
-
 from pyspark.context import SparkContext
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession, DataFrame, Window, Column
@@ -29,14 +28,10 @@ def add_insert_data(df: DataFrame):
     )
 
 
-from pyspark.sql import DataFrame, Column
-from typing import List, Union
-
-
 def add_data_version_flags(
     df: DataFrame,
-    internal_date_col: Union[Column, str],
-    metadata_date_col: Union[Column, str],
+    internal_date_col: str,
+    metadata_date_col: str,
 ) -> DataFrame:
     """Adds 3 metadata columns to spark DataFrame:
         (
@@ -62,20 +57,23 @@ def add_data_version_flags(
     output_df = df.withColumns(
         {
             "_initial_data_for_date": when(
-                (metadata_date_col == min(metadata_date_col).over(current_window)),
+                (df[metadata_date_col] == min(metadata_date_col).over(current_window)),
                 True,
             ).otherwise(
                 False,
             ),
             "_most_recent_data_for_date": when(
-                (metadata_date_col == max(metadata_date_col).over(current_window)),
+                (df[metadata_date_col] == max(metadata_date_col).over(current_window)),
                 True,
             ).otherwise(
                 False,
             ),
             "_deleted_at_source": when(
-                (metadata_date_col != max(metadata_date_col).over(current_window))
-                & (metadata_date_col == max(metadata_date_col).over(outdated_window)),
+                (df[metadata_date_col] != max(metadata_date_col).over(current_window))
+                & (
+                    df[metadata_date_col]
+                    == max(metadata_date_col).over(outdated_window)
+                ),
                 True,
             ).otherwise(
                 False,
