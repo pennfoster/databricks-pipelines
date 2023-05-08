@@ -44,6 +44,7 @@ else:
 failures = {}
 for api_object, table_name in assets.items():
     try:
+        print(f"Starting {table_name}...")
         marketo = MarketoREST()
         dir_path = f"{marketo.storage_paths.landing}/{table_name}"
         Path(f"/dbfs/{dir_path}").mkdir(exist_ok=True)
@@ -68,6 +69,8 @@ for api_object, table_name in assets.items():
             raise ValueError(
                 "Row count pulled from API does not match rows read from file"
             )
+        print(f"{table_name} complete.")
+
     except Exception as e:
         failures["table_name"] = [e.__repr__()]
         continue

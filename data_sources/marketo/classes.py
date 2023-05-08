@@ -167,8 +167,10 @@ class MarketoREST(RESTBase):
         errors = response.json().get("errors") or []
 
         if warnings:
+            logging.warning("For %s:" % api_object)
             logging.warning(*warnings)
         if errors:
+            logging.warning("For %s:" % api_object)
             logging.error(**errors)
             raise RequestException
 
