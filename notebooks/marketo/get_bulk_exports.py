@@ -71,11 +71,13 @@ while True:
         raise ValueError(
             f'Job status is "{job_status}". Expected "Queued" or "Processing"'
         )
-    if job_status in ["Queued", "Processing"]:
+    elif job_status in ["Queued", "Processing"]:
         time.sleep(15)
         continue
-    if job_status in ["Completed"]:
+    elif job_status in ["Completed"]:
         break
+    else:
+        raise ValueError("Unexpected job status returned.")
 
 # COMMAND ----------
 filepath = marketo.load_completed_job_to_raw(api_object=w_api_object, job_id=job_id)
