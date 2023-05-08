@@ -9,6 +9,7 @@ from requests_oauthlib import OAuth2Session
 from requests.exceptions import RequestException
 
 from shared.functions.azure_utilities import get_key_vault_scope
+from shared.functions.file_io import generate_unique_filename
 from shared.classes import RESTBase
 
 # defines dbutils for the module
@@ -118,7 +119,8 @@ class MarketoREST(RESTBase):
         with requests.get(url, headers=self.auth_header, stream=True) as download:
             directory = Path(f"/dbfs/{self.storage_paths.landing}/{api_object}")
             directory.mkdir(exist_ok=True)
-            filepath = f"{directory}/ts-{pendulum.now().int_timestamp}_{job_id}.csv"
+            filename = generate_unique_filename(api_object)
+            filepath = f"{directory}/{filename}.csv"
 
             with open(filepath, "wb") as file:
                 for chunk in download.iter_content(chunk_size=(10 * (1024**2))):
