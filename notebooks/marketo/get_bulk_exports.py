@@ -83,4 +83,4 @@ print(filepath)
 
 # COMMAND ----------
 if not marketo.verify_export_file_integrity(filepath, checksum):
-    raise ValueError("File in storage did not API checksum")
+    raise ValueError("File in storage did not match API checksum")

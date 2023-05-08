@@ -41,27 +41,39 @@ else:
     assets = {w_asset: assets[w_asset]}
 
 # COMMAND ----------
-
+failures = {}
 for api_object, table_name in assets.items():
-    marketo = MarketoREST()
-    dir_path = f"{marketo.storage_paths.landing}/{table_name}"
-    Path(f"/dbfs/{dir_path}").mkdir(exist_ok=True)
+    try:
+        marketo = MarketoREST()
+        dir_path = f"{marketo.storage_paths.landing}/{table_name}"
+        Path(f"/dbfs/{dir_path}").mkdir(exist_ok=True)
 
-    filename = generate_unique_filename(table_name)
-    filepath = f"{dir_path}/{filename}.jsonl"
+        filename = generate_unique_filename(table_name)
+        filepath = f"{dir_path}/{filename}.jsonl"
 
-    offset = 0
-    with open(f"/dbfs/{filepath}", "a") as file:
-        while True:
-            results, warnings, errors = marketo.get_assets_data(
-                api_object=api_object, start_date=w_start_date, offset=offset
+        offset = 0
+        with open(f"/dbfs/{filepath}", "a") as file:
+            while True:
+                results, warnings, errors = marketo.get_assets_data(
+                    api_object=api_object, start_date=w_start_date, offset=offset
+                )
+                if len(results) == 0:
+                    break
+                offset += len(results)
+                file.writelines((json.dumps(row) + "\n" for row in results))
+                print(f"Rows retrieved:\t{offset}")
+
+        df = spark.read.json(filepath)
+        if offset != df.count():
+            raise ValueError(
+                "Row count pulled from API does not match rows read from file"
             )
-            if len(results) == 0:
-                break
-            offset += len(results)
-            file.writelines((json.dumps(row) + "\n" for row in results))
-            print(f"Rows retrieved:\t{offset}")
+    except Exception as e:
+        failures["table_name"] = [e.__repr__()]
+        continue
 
-    df = spark.read.json(filepath)
-    if offset != df.count():
-        raise ValueError("Row count pulled from API does not match rows read from file")
+# COMMAND ----------
+if any(failures):
+    import json
+
+    raise Exception(json.dumps(failures))
