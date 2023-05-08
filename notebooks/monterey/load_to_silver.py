@@ -6,7 +6,6 @@ bronze_path = get_mount_paths(DATA_SOURCE).bronze
 silver_path = get_mount_paths(DATA_SOURCE).silver
 
 # COMMAND ----------
-
 for table_fs in dbutils.fs.ls(bronze_path):
     bronze_df = spark.read.load(path=table_fs.path, format="delta")
 
@@ -18,3 +17,5 @@ for table_fs in dbutils.fs.ls(bronze_path):
     current_data.write.format("delta").mode("overwrite").option(
         "mergeSchema", True
     ).option("overwriteSchema", True,).save(f"{silver_path}/{table_fs.name}")
+
+    print(f"{table_fs.name} complete.")
