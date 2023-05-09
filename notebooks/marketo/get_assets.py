@@ -69,6 +69,10 @@ for api_object, table_name in assets.items():
             raise ValueError(
                 "Row count pulled from API does not match rows read from file"
             )
+
+        if df.count() == 0:
+            dbutils.fs.rm(filepath)
+
         print(f"{table_name} complete.")
 
     except Exception as e:
