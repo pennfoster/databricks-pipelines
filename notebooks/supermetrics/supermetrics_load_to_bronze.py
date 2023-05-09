@@ -52,7 +52,7 @@ if not resp_json["data"]:
 # COMMAND -----
 json_path = save_json(
     dest_dir=f"/dbfs{raw_dir}",
-    file_name=f"{search_name}_{query_name}",
+    file_name=f"{query_name}",
     data=resp_json,
     suffix="timestamp",
     parents=True,
@@ -84,14 +84,21 @@ for file in unprocessed:
 
     sparkdf = spark.createDataFrame(df)
     sparkdf = sparkdf.withColumn(
-        "__etl_record_insert_date", current_timestamp()
-    ).withColumn("__etl_source_file_path", json_path)
+        "_etl_record_insert_date", current_timestamp()
+    ).withColumn("_etl_source_file_path", lit(json_path))
     sparkdf.write.format("delta").mode("append").partitionBy("date").option(
         "mergeSchema", True
-    ).option("overwriteSchema", True).save(f"{bronze_dir}/{search_name}_{query_name}")
+    ).option("overwriteSchema", True).save(f"{bronze_dir}/{query_name}")
+
+    spark.sql(
+        f"""
+        create table if not exists bronze_supermetrics.{search_name}_{query_name}
+        location {bronze_dir}/{query_name}
+    """
+    )
 
     processed_dir = f"{raw_dir}/processed"
-    Path(processed_dir).mkdir(parents=True, exist_ok=True)
+    Path(f"/dbfs/{processed_dir}").mkdir(parents=False, exist_ok=True)
     dbutils.fs.mv(f"{file}".replace("/dbfs", ""), processed_dir)
 # COMMAND -----
 
