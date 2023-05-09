@@ -20,11 +20,7 @@ table_variables = {
     "form_fields/": {"uid": "id", "date_field": "updatedAt"},
     "forms/": {"uid": "id", "date_field": "updatedAt"},
     "landing_pages/": {"uid": "id", "date_field": "updatedAt"},
-    "leads/": {
-        "uid": "id",
-        "date_field": "updatedAt",
-        # ( where try_cast(id as integer) is not null )
-    },
+    "leads/": {"uid": "id", "date_field": "updatedAt"},
     "snippets/": {"uid": "id", "date_field": "updatedAt"},
     # "programs/": {"uid": None, "date_field": None},  # empty
     # "smart_campaigns/": {"uid": None, "date_field": None},  # empty
@@ -74,9 +70,9 @@ for table in dbutils.fs.ls(mnt_path.landing):
             bronze_table = spark.read.load(f"{mnt_path.bronze}/{table.name}")
             dirty_df = bronze_table.unionByName(raw_df, allowMissingColumns=True)
         except AnalysisException as e:
-            if not ("is not a Delta table" in e.cause):
+            if not ("is not a Delta table" in e.desc):
                 raise e
-            dirty_df = spark.read.load(f"{mnt_path.bronze}/{table.name}")
+            dirty_df = raw_df
 
         versioned_df = add_data_version_flags(
             df=dirty_df,
