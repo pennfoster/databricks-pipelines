@@ -1,4 +1,5 @@
 # Databricks notebook source
+# DBTITLE 1, Imports and Variables
 from pyspark.sql.utils import AnalysisException
 
 from shared.functions.azure_utilities import get_mount_paths
@@ -7,7 +8,6 @@ from shared.functions.metadata_utilities import add_data_version_flags, add_inse
 mnt_path = get_mount_paths("marketo")
 
 failures = {}
-# COMMAND -----
 table_variables = {
     "activities/": {
         "uid": "marketoguid",
@@ -29,10 +29,12 @@ table_variables = {
 }
 
 # COMMAND -----
+# DBTITLE 1, Load Raw to Bronze
 for table in dbutils.fs.ls(mnt_path.landing):
     bronze_table_path = f"{mnt_path.bronze}/{table.name}"
 
     try:
+        # check for new files
         csv_files = [
             file.path
             for file in dbutils.fs.ls(table.path)
@@ -49,7 +51,8 @@ for table in dbutils.fs.ls(mnt_path.landing):
         if jsonl_files and csv_files:
             raise TypeError("Mixed file types")
 
-        for n, file in enumerate([*csv_files, *jsonl_files]):
+        # Files are read into DataFrames individually to assure unique insert timestamps
+        for n, file in enumerate(sorted([*csv_files, *jsonl_files])):
             if csv_files:
                 df = spark.read.csv(
                     path=csv_files,
@@ -66,6 +69,7 @@ for table in dbutils.fs.ls(mnt_path.landing):
                 continue
             raw_df = raw_df.unionByName(i_df, allowMissingColumns=True)
 
+        # Union new data with existing bronze
         try:
             bronze_table = spark.read.load(f"{mnt_path.bronze}/{table.name}")
             dirty_df = bronze_table.unionByName(raw_df, allowMissingColumns=True)
@@ -74,22 +78,26 @@ for table in dbutils.fs.ls(mnt_path.landing):
                 raise e
             dirty_df = raw_df
 
+        # Update versioning flags
         versioned_df = add_data_version_flags(
             df=dirty_df,
             internal_date_col=table_variables[table.name]["date_field"],
             metadata_date_col="_bronze_insert_ts",
         )
 
+        # Drop duplicates
         clean_df = versioned_df.filter(
             (versioned_df["_initial_data_for_date"] == True)
             | (versioned_df["_most_recent_data_for_date"] == True)
             | (versioned_df["_deleted_at_source"] == True)
         )
 
+        # Write to bronze
         clean_df.write.format("delta").mode("overwrite").option(
             "mergeSchema", True
         ).option("overwriteSchema", True,).save(bronze_table_path)
 
+        # Move processed files
         processed_dest = f"{table.path}/processed"
         dbutils.fs.mkdirs(processed_dest)
         for file in [*csv_files, *jsonl_files]:
@@ -102,6 +110,7 @@ for table in dbutils.fs.ls(mnt_path.landing):
         continue
 
 # COMMAND ----------
+# DBTITLE 1, Check for failures
 if any(failures):
     import json
 

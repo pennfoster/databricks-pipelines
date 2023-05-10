@@ -2,10 +2,10 @@
 from shared.functions.azure_utilities import get_mount_paths
 
 DATA_SOURCE = "marketo"
+
 bronze_path = get_mount_paths(DATA_SOURCE).bronze
 silver_path = get_mount_paths(DATA_SOURCE).silver
 
-# COMMAND ----------
 table_variables = {
     "activities/": {
         "uid": "marketoguid",
@@ -18,7 +18,11 @@ table_variables = {
     "form_fields/": {"uid": "id", "date_field": "_bronze_insert_ts"},
     "forms/": {"uid": "id", "date_field": "updatedAt"},
     "landing_pages/": {"uid": "id", "date_field": "updatedAt"},
-    "leads/": {"uid": "id", "date_field": "updatedAt"},
+    "leads/": {
+        "uid": "id",
+        "date_field": "updatedAt",
+        "where_clause": "try_cast(id as integer) is not null",
+    },
     "programs/": {"uid": "id", "date_field": "updatedAt"},
     "smart_campaigns/": {"uid": "id", "date_field": "updatedAt"},
     "smart_lists/": {"uid": "id", "date_field": "updatedAt"},

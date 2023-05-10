@@ -1,4 +1,5 @@
 # Databricks notebook source
+# DBTITLE 1, Imports and Variables
 import json
 from pathlib import Path
 
@@ -7,7 +8,7 @@ import pendulum
 from data_sources.marketo.classes import MarketoREST
 from shared.functions.file_io import generate_unique_filename
 
-# COMMAND ----------
+failures = {}
 assets = {
     # api_object: table_name
     "Get all assets": "",
@@ -24,6 +25,7 @@ assets = {
     "staticLists": "static_lists",
 }
 # COMMAND ----------
+# DBTITLE 1, Widgets for Manual Runs
 dbutils.widgets.dropdown(
     "asset", list(assets.keys())[0], list(assets.keys()), "1. Asset"
 )
@@ -32,7 +34,9 @@ dbutils.widgets.text(
     defaultValue=str(pendulum.now().date().subtract(days=30)),
     label="2. Start date (YYYY-MM-DD)",
 )
+
 # COMMAND ----------
+# DBTITLE 1, Retrieve Data
 w_asset = dbutils.widgets.get("asset")
 w_start_date = dbutils.widgets.get("start_date")
 if w_asset == "Get all assets":
@@ -40,8 +44,6 @@ if w_asset == "Get all assets":
 else:
     assets = {w_asset: assets[w_asset]}
 
-# COMMAND ----------
-failures = {}
 for api_object, table_name in assets.items():
     try:
         print(f"Starting {table_name}...")
@@ -80,6 +82,7 @@ for api_object, table_name in assets.items():
         continue
 
 # COMMAND ----------
+# DBTITLE 1, Check for Failures
 if any(failures):
     import json
 
