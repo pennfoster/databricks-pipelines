@@ -51,6 +51,31 @@ d = delta_dirs[0]
 
 # dir = paths[0]
 # dir_mnt = Path(*dir.parts[2:])
+# COMMAND -----
+base_columns = '''
+    year(date) as year
+   , year(date) || '|' || month(date) as yearmonth
+   , month(date) as month
+   , day(date) as dayofmonth
+   , day(date) || ' ' || date_format(date, 'EEEE') as dayofweek
+'''
+# select
+#   replace(customurlparameters, '"', '') as customurlparameters
+#   , year(date) as year
+#   , year(date) || '|' || month(date) as yearmonth
+#   , month(date) as month
+#   , day(date) as dayofmonth
+#   , day(date) || ' ' || date_format(date, 'EEEE') as dayofweek
+#   , customurlparameters:mkwid as mkwid
+#   , customurlparameters:dskeyname as mkwid
+#   , customurlparameters:pubcode as pubcode
+#   , customurlparameters:adkey as adkey
+#   , customurlparameters:dskeyword as dskeyword
+#   , * except(customurlparameters)
+
+
+
+
 spark.sql(
     f"""
     select * 

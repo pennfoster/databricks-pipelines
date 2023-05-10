@@ -10,6 +10,7 @@ from pyspark.sql.functions import current_timestamp, lit
 
 from data_sources.supermetrics.classes import Supermetrics
 from data_sources.supermetrics.functions import get_url_dataframe, save_json, load_json
+from shared.classes.table_schemas import TableSchemas
 
 # COMMAND -----
 dbutils.widgets.dropdown("environment", "dev", ["dev", "prd"])
@@ -41,6 +42,7 @@ if date_range:
 
 raw_dir = f"/mnt/sadataraw{env}001_landing/supermetrics/{search_name}/{query_name}"
 bronze_dir = f"/mnt/bronze/supermetrics/{search_name}/{query_name}"
+data_source = 'supermetrics'
 
 # COMMAND -----
 sm = Supermetrics()
@@ -65,7 +67,7 @@ print(json_path)
 unprocessed = [
     str(file) for file in Path(f"/dbfs{raw_dir}").iterdir() if file.is_file()
 ]
-# unprocessed = dbutils.fs.ls(raw_dir)
+ts = TableSchemas(data_source=data_source, table_name=search_name)
 
 for file in unprocessed:
     resp_json = load_json(f"{file}")
@@ -76,10 +78,6 @@ for file in unprocessed:
     data = resp_json["data"][1:]
 
     df = pd.DataFrame(columns=cols, data=data)
-    # df["raw_file_path"] = json_path
-    # df["raw_file_name"] = json_path.split("/")[-1]
-    # tz = timezone(COMPANY_TIMEZONE)
-    # df["record_insert_date"] = datetime.now(tz).strftime("%Y-%m-%dT%H:%M:%S")
     df = df.applymap(str)
 
     sparkdf = spark.createDataFrame(df)
@@ -96,10 +94,12 @@ for file in unprocessed:
         location {bronze_dir}/{query_name}
     """
     )
+    ts.new_column_inserts()
 
     processed_dir = f"{raw_dir}/processed"
     Path(f"/dbfs/{processed_dir}").mkdir(parents=False, exist_ok=True)
     dbutils.fs.mv(f"{file}".replace("/dbfs", ""), processed_dir)
+
 # COMMAND -----
 
 # COMMAND -----

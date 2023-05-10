@@ -11,7 +11,6 @@ dbutils = DBUtils(spark)
 
 class Supermetrics:
     def __init__(self) -> None:
-        self.short_domain = ""
         self.fields = None
         self.status = None
         self.resp_structure = None
@@ -49,3 +48,18 @@ class Supermetrics:
             )
 
         return response.json()
+
+    def get_custom_params_query(self, search_name):
+        if "google" in search_name.lower():
+            query = """
+                customurlparameters:mkwid as mkwid
+                , customurlparameters:dskeyname as mkwid
+                , customurlparameters:pubcode as pubcode
+                , customurlparameters:adkey as adkey
+                , customurlparameters:dskeyword as dskeyword
+            """
+        elif "bing" in search_name.lower():
+            query = """
+            """
+
+        return query
