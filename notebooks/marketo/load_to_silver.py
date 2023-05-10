@@ -1,9 +1,7 @@
 # Databricks notebook source
-from pyspark.sql import Window
 from shared.functions.azure_utilities import get_mount_paths
 
-
-DATA_SOURCE = "monterey"
+DATA_SOURCE = "marketo"
 bronze_path = get_mount_paths(DATA_SOURCE).bronze
 silver_path = get_mount_paths(DATA_SOURCE).silver
 
@@ -17,15 +15,15 @@ table_variables = {
     "channels/": {"uid": "id", "date_field": "updatedAt"},
     "email_templates/": {"uid": "id", "date_field": "updatedAt"},
     "emails/": {"uid": "id", "date_field": "updatedAt"},
-    "form_fields/": {"uid": "id", "date_field": "updatedAt"},
+    "form_fields/": {"uid": "id", "date_field": "_bronze_insert_ts"},
     "forms/": {"uid": "id", "date_field": "updatedAt"},
     "landing_pages/": {"uid": "id", "date_field": "updatedAt"},
-    "leads/": {
-        "uid": "id",
-        "date_field": "updatedAt",
-        "where_clause": "try_cast(id as integer) is not null",
-    },
+    "leads/": {"uid": "id", "date_field": "updatedAt"},
+    "programs/": {"uid": "id", "date_field": "updatedAt"},
+    "smart_campaigns/": {"uid": "id", "date_field": "updatedAt"},
+    "smart_lists/": {"uid": "id", "date_field": "updatedAt"},
     "snippets/": {"uid": "id", "date_field": "updatedAt"},
+    # "static_lists/": {"uid": "id", "date_field": "updatedAt"},  # empty
 }
 # COMMAND ----------
 for table in dbutils.fs.ls(bronze_path):

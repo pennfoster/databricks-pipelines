@@ -17,15 +17,15 @@ table_variables = {
     "channels/": {"uid": "id", "date_field": "updatedAt"},
     "email_templates/": {"uid": "id", "date_field": "updatedAt"},
     "emails/": {"uid": "id", "date_field": "updatedAt"},
-    "form_fields/": {"uid": "id", "date_field": "updatedAt"},
+    "form_fields/": {"uid": "id", "date_field": "_bronze_insert_ts"},
     "forms/": {"uid": "id", "date_field": "updatedAt"},
     "landing_pages/": {"uid": "id", "date_field": "updatedAt"},
     "leads/": {"uid": "id", "date_field": "updatedAt"},
     "snippets/": {"uid": "id", "date_field": "updatedAt"},
-    # "programs/": {"uid": None, "date_field": None},  # empty
-    # "smart_campaigns/": {"uid": None, "date_field": None},  # empty
-    # "smart_lists/": {"uid": None, "date_field": None},  # empty
-    # "static_lists/": {"uid": None, "date_field": None},  # empty
+    "programs/": {"uid": "id", "date_field": "updatedAt"},
+    "smart_campaigns/": {"uid": "id", "date_field": "updatedAt"},
+    "smart_lists/": {"uid": "id", "date_field": "updatedAt"},
+    # "static_lists/": {"uid": "id", "date_field": "updatedAt"},  # empty
 }
 
 # COMMAND -----
@@ -86,10 +86,9 @@ for table in dbutils.fs.ls(mnt_path.landing):
             | (versioned_df["_deleted_at_source"] == True)
         )
 
-        df.write.format("delta").mode("overwrite").option("mergeSchema", True).option(
-            "overwriteSchema",
-            True,
-        ).save(bronze_table_path)
+        clean_df.write.format("delta").mode("overwrite").option(
+            "mergeSchema", True
+        ).option("overwriteSchema", True,).save(bronze_table_path)
 
         processed_dest = f"{table.path}/processed"
         dbutils.fs.mkdirs(processed_dest)
@@ -106,4 +105,5 @@ for table in dbutils.fs.ls(mnt_path.landing):
 if any(failures):
     import json
 
-    raise Exception(json.dumps(failures))
+    print(json.dumps(failures, indent=4))
+    raise Exception

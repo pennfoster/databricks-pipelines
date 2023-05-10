@@ -29,7 +29,7 @@ dbutils.widgets.dropdown(
 )
 dbutils.widgets.text(
     name="start_date",
-    defaultValue=str(pendulum.now().date().subtract(days=1)),
+    defaultValue=str(pendulum.now().date().subtract(days=30)),
     label="2. Start date (YYYY-MM-DD)",
 )
 # COMMAND ----------
