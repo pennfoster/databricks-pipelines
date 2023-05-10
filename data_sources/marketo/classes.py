@@ -71,7 +71,7 @@ class MarketoREST(RESTBase):
         self._get_bearer_token()
 
         url = f"{self.domain}/rest/v1/leads/describe.json"
-        response = requests.get(url)
+        response = requests.get(url, headers=self.auth_header)
         self._assure_request_success(response)
 
         fields = response.json()["result"]
