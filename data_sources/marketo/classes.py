@@ -60,6 +60,24 @@ class MarketoREST(RESTBase):
             logging.error(response.json())
             raise ValueError('request "success" field returned `False`')
 
+    def get_lead_fields(self) -> List[str]:
+        """The leads bulk export object has ~1300 fields available. The only way to get
+        them all is to list them explicitly. This method assures updates to the list are
+        captured
+
+        Returns:
+            List[str]: Field names for rest api.
+        """
+        self._get_bearer_token()
+
+        url = f"{self.domain}/rest/v1/leads/describe.json"
+        response = requests.get(url)
+        self._assure_request_success(response)
+
+        fields = response.json()["result"]
+
+        return [f["rest"]["name"] for f in fields]
+
     def create_async_export_job(
         self,
         api_object: str,

@@ -4,19 +4,23 @@ import logging, time
 import pendulum
 
 from data_sources.marketo.classes import MarketoREST
-from data_sources.marketo.reference.lead_fields import lead_fields
+
+marketo = MarketoREST()
 
 # COMMAND ----------
 job_variables = {
     "leads": {
-        "fields": {"fields": lead_fields},  # there's a good reason for this
+        # This object has ~1300 fields which have to be listed explicitly
+        "fields": {"fields": marketo.get_lead_fields()},
         "export_filter": "updatedAt",
     },
     "activities": {
-        "fields": {},  # this too
+        # This object automatically retrieves all fields if param is left empty
+        "fields": {},
         "export_filter": "createdAt",
     },
 }
+# COMMAND ----------
 dbutils.widgets.dropdown(
     name="api_object",
     defaultValue=list(job_variables.keys())[0],
@@ -39,11 +43,11 @@ w_start_date = dbutils.widgets.get("start_date")
 w_days = dbutils.widgets.get("data_window_in_days")
 w_job_id = dbutils.widgets.get("job_id")
 
+
 object_variables = job_variables[w_api_object]
 start_date = pendulum.parse(w_start_date)
 end_date = start_date.add(days=int(w_days))
 
-marketo = MarketoREST()
 # COMMAND ----------
 if w_job_id == "":
     job_id = marketo.create_async_export_job(
