@@ -1,0 +1,180 @@
+{
+    "name": "marketo.rest",
+    "email_notifications": {
+        "on_failure": [
+            "noam.blanks@pennfoster.edu",
+            "nblanks@pennfoster.edu"
+        ],
+        "no_alert_for_skipped_runs": false
+    },
+    "webhook_notifications": {},
+    "timeout_seconds": 0,
+    "schedule": {
+        "quartz_cron_expression": "25 0 0 * * ?",
+        "timezone_id": "America/New_York",
+        "pause_status": "UNPAUSED"
+    },
+    "max_concurrent_runs": 1,
+    "tasks": [
+        {
+            "task_key": "get_assets",
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/get_assets",
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "Job_cluster",
+            "libraries": [
+                {
+                    "pypi": {
+                        "package": "oauthlib==3.2.2"
+                    }
+                },
+                {
+                    "pypi": {
+                        "package": "paramiko==3.1.0"
+                    }
+                },
+                {
+                    "pypi": {
+                        "package": "pendulum==2.1.2"
+                    }
+                },
+                {
+                    "pypi": {
+                        "package": "requests==2.28.2"
+                    }
+                },
+                {
+                    "pypi": {
+                        "package": "requests-oauthlib==1.3.1"
+                    }
+                },
+                {
+                    "pypi": {
+                        "package": "aiohttp==3.8.4"
+                    }
+                }
+            ],
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        },
+        {
+            "task_key": "get_bulk_activities",
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/get_bulk_exports",
+                "base_parameters": {
+                    "api_object": "activities"
+                },
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "Job_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        },
+        {
+            "task_key": "get_bulk_leads",
+            "depends_on": [
+                {
+                    "task_key": "get_bulk_activities"
+                }
+            ],
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/get_bulk_exports",
+                "base_parameters": {
+                    "api_object": "leads"
+                },
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "Job_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        },
+        {
+            "task_key": "load_to_bronze",
+            "depends_on": [
+                {
+                    "task_key": "get_assets"
+                },
+                {
+                    "task_key": "get_bulk_leads"
+                }
+            ],
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/load_to_bronze",
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "Job_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        },
+        {
+            "task_key": "load_to_silver",
+            "depends_on": [
+                {
+                    "task_key": "load_to_bronze"
+                }
+            ],
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/load_to_silver",
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "Job_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        }
+    ],
+    "job_clusters": [
+        {
+            "job_cluster_key": "Job_cluster",
+            "new_cluster": {
+                "cluster_name": "",
+                "spark_version": "12.2.x-scala2.12",
+                "spark_conf": {
+                    "spark.databricks.delta.preview.enabled": "true"
+                },
+                "azure_attributes": {
+                    "first_on_demand": 1,
+                    "availability": "ON_DEMAND_AZURE",
+                    "spot_bid_max_price": -1
+                },
+                "node_type_id": "Standard_F4",
+                "spark_env_vars": {
+                    "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+                },
+                "enable_elastic_disk": true,
+                "data_security_mode": "SINGLE_USER",
+                "runtime_engine": "STANDARD",
+                "num_workers": 4
+            }
+        }
+    ],
+    "tags": {
+        "workflow": "CI/CD"
+    },
+    "format": "MULTI_TASK"
+}
