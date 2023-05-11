@@ -85,14 +85,21 @@ def add_data_version_flags_2(
     )
 
     if internal_date_col:
-        latest_df = v_df.select("_row_hash").where("_latest = TRUE")
+        latest = [
+            h[0]
+            for h in v_df.select("_row_hash")
+            .where("_latest = TRUE")
+            .distinct()
+            .collect()
+        ]
+        bc_latest = sc.broadcast(latest)
         internal_date_partition = Window().partitionBy(internal_date_col)
         vd_df = v_df.withColumn(
             "_deleted",
             when(
-                (~v_df["_row_hash"].isin(latest_df))
+                (~v_df["_row_hash"].isin(bc_latest.value))
                 | (
-                    (v_df["_row_hash"].isin(latest_df))
+                    (v_df["_row_hash"].isin(bc_latest.value))
                     & (
                         v_df[meta_ingestion_date_col]
                         != max(meta_ingestion_date_col).over(internal_date_partition)
