@@ -42,7 +42,7 @@ def add_data_version_flags_2(
     # TODO: add hash column first
     hash_df = df.withColumn(
         "_row_hash",
-        lit(hash(original_columns)),
+        hash(*original_columns),
     )
 
     hash_partition = Window().partitionBy("_row_hash")
