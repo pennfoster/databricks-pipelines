@@ -3,10 +3,8 @@ import requests
 import pendulum
 from pyspark.context import SparkContext
 from pyspark.dbutils import DBUtils
-from pyspark.sql import SparkSession, DataFrame, Window, Column
-from pyspark.sql.types import DateType
+from pyspark.sql import SparkSession, DataFrame, Window
 from pyspark.sql.functions import (
-    cast,
     input_file_name,
     lit,
     when,
