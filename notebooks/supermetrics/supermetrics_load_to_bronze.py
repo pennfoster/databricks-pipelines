@@ -105,41 +105,4 @@ for file in unprocessed:
     dbutils.fs.mv(f"{file}".replace("/dbfs", ""), processed_dir)
 
 # COMMAND -----
-
-# COMMAND -----
 dbutils.notebook.exit("SUCCESS")
-
-
-# dbutils.notebook.exit("SUCCESS")
-
-
-# from pyspark.sql.types import *
-# dtype_map = {
-#     'string.time.date': StringType(),
-#     'string.text.value': StringType(),
-#     'int.number.value': StringType(),
-#  'float.currency.value': StringType(),
-#  'float.number.ratio': StringType(),
-#  'float.number.value': StringType()}
-
-# fields = b['meta']['query']['fields']
-# data = b['data'][1:]
-# a = []
-# for i in fields:
-#     a.append(StructField(
-#         name=i['field_id'].lower(),
-#         dataType=dtype_map[i['data_type']],
-#         nullable=True
-#     ))
-# schema = StructType(a)
-# df = spark.createDataFrame(data=data, schema=schema)
-
-# from pyspark.sql.functions import col
-# df_temp.select(*(col(c).cast("float").alias(c) for c in df_temp.columns))
-# df.withColumn("salary",col("salary").cast('double'))
-from pyspark.sql.types import StructType
-
-dfsp_schema = [
-    {"metadata": {}, "name": col, "nullable": True, "type": "string"} for col in cols
-]
-schema = StructType.fromJson({"fields": dfsp_schema})
