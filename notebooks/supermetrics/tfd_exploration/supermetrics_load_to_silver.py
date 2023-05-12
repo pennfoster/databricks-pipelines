@@ -1,6 +1,4 @@
 # Databricks notebook source
-# %pip install aiohttp paramiko
-# COMMAND -----
 import os
 import pandas as pd
 import re
@@ -14,15 +12,16 @@ from shared.functions.azure_utilities import get_mount_paths
 from data_sources.supermetrics.functions import get_url_dataframe, save_json, load_json
 from shared.constants import COMPANY_TIMEZONE
 
-spark.conf.set("spark.sql.ansi.enabled", True)
 # COMMAND -----
 tz = timezone(COMPANY_TIMEZONE)
 seven_days_ago = (datetime.now(tz) - timedelta(days=7)).strftime("%Y-%m-%d")
 
+dbutils.widgets.dropdown("environment", "dev", ["dev", "prd"])
 dbutils.widgets.text("end_date",datetime.now(tz).strftime("%Y-%m-%d"), "")
 dbutils.widgets.combobox("start_date", seven_days_ago, [seven_days_ago, "1900-01-01"])
 
-url_df = get_url_dataframe()
+env = dbutils.widgets.get("environment")
+url_df = get_url_dataframe(env)
 search_names = url_df["C001_SearchName"].sort_values().unique().tolist()
 search_names += [""]
 
@@ -30,8 +29,6 @@ dbutils.widgets.dropdown("search_name", "", search_names)
 
 # COMMAND -----
 search_name = dbutils.widgets.get("search_name")
-if not search_name:
-   raise ValueError('Empty search_name parameter provided.')
 start_date = dbutils.widgets.get("start_date")
 end_date = dbutils.widgets.get("end_date")
 
@@ -44,70 +41,66 @@ data_source = 'supermetrics'
 silver_db = f'silver_{data_source}'
 bronze_db = f'bronze_{data_source}'
 paths = get_mount_paths(data_source)
-bronze_dir = f"{paths.bronze}/{search_name.lower()}/"
-silver_dir = f"{paths.silver}/{search_name.lower()}"
+bronze_dir = f"{paths.bronze}/{search_name}/"
+silver_dir = f"{paths.silver}/{search_name}"
 
 
 # COMMAND -----
-dirs = [i for i in Path("/dbfs" + bronze_dir).iterdir() if i.is_dir()]
-queries = [i.name for i in dirs]
-delta_dirs = [i.joinpath(j) for i, j in zip(dirs, queries)]
-if not delta_dirs:
-   raise ValueError(f'No bronze tables were found in the bronze directory provided: {bronze_dir}')
+# indx = 1
+# row = df.iloc[1, :]
+# search_name = row["C001_SearchName"]
+# bronze_path = f"mnt/bronze/supermetrics/{search_name}"
+paths = [i for i in Path("/dbfs" + bronze_dir).iterdir() if i.is_dir()]
+queries = [i.parts[-1] for i in paths]
+delta_dirs = [i.joinpath(j) for i, j in zip(paths, queries)]
+
 # COMMAND -----
+
+# COMMAND -----
+# TESTING
+# TODO: Remove testing cell
 spark.sql(f'create database if not exists {silver_db}')
+a = delta_dirs[0]
+query_name = a.parts[-1]
+table_dir = '/' / Path(*a.parts[2:])
+bronze_table_path = f'bronze_supermetrics.{search_name}_{query_name}'
+ts = TableSchemas(data_source=data_source, table_name=search_name)
+select_clause = ts.build_select_clause()
+# df = spark.read.format('delta') \
+#     .option("startingVersion", "latest") \
+#     .option("query", "select * limit 1") \
+#     .table(bronze_table_path)
+history = spark.sql(f'describe history {bronze_db}.{search_name}_{query_name}').toPandas()
+latest_version = history['version'].max()
 
-for i in delta_dirs:
-    query_name = i.name
-    table_dir = '/' / Path(*i.parts[2:])
-    bronze_table_path = f'{bronze_db}.{search_name.lower()}_{query_name.lower()}'
-
-    history = spark.sql(f'describe history {bronze_db}.{search_name.lower()}_{query_name.lower()}').toPandas()
-    latest_version = history['version'].max()
-
-    ts = TableSchemas(data_source=data_source, table_name=search_name)
-    select_clause = ts.get_select_clause(nullif='')
-    query = f'''
-        select
-          '{query_name}' as queryname
-          , year(date) as year
-          , year(date) || '|' || month(date) as yearmonth
-          , month(date) as month
-          , day(date) as dayofmonth
-          , day(date) || ' ' || date_format(date, 'EEEE') as dayofweek
-          , {select_clause}
-        from
-          {bronze_db}.{search_name.lower()}_{query_name.lower()}@v{latest_version}
-    '''
-    # --{where_clause_start} -- these are for filtering dates to not rebuild table each time
-    # --{where_clause_end} -- this is for filtering dates to not rebuild table each time
-    spdf = spark.sql(query)
-
-# pddf = spdf.toPandas()
-# dates = pddf.date.unique().tolist()
-# spark.sql(f'''
-#     delete from {silver_db}.{search_name} 
-#     where dates in ({dates}) 
-#     and lower(queryname) = lower({query_name})
-# ''')
-          
-    spdf.write.format("delta").mode("overwrite").option(
-        "mergeSchema", True
-    ).option("overwriteSchema", True).option("replaceWhere", f"queryname = '{query_name}'").partitionBy("queryname").save(f"{silver_dir}")
-
+query = f'''
+    select
+      '{query_name}' as query_name
+      , year(date) as year
+      , year(date) || '|' || month(date) as yearmonth
+      , month(date) as month
+      , day(date) as dayofmonth
+      , day(date) || ' ' || date_format(date, 'EEEE') as dayofweek
+      , {select_clause}
+    from
+      {bronze_db}.{search_name}_{query_name}@v{latest_version}
+    {where_clause_start}
+    {where_clause_end}
+'''
+spdf = spark.sql(query)
+spdf.write.format("delta").mode("ignore").option(
+    "mergeSchema", True
+).option("overwriteSchema", True).save(f"{silver_dir}e")
 spark.sql(f'''
-    create table if not exists {silver_db}.{search_name.lower()} location '{silver_dir}'
+    create table if not exists {silver_db}.{search_name} location '{silver_db}.{search_name}'
 ''')
-# spark.sql(f'''
-#     create table if not exists {silver_db}.{search_name} location '{silver_db}.{search_name}'
-# ''')
 # COMMAND -----
-# spark.sql(f'''
-#    merge into {silver_db}.{search_name} dest
-#    using ({query}) src
-#    on dest.date = src.date
-#    when matched delete
-# ''')
+spark.sql(f'''
+   merge into {silver_db}.{search_name} dest
+   using ({query}) src
+   on dest.date = src.date
+   when matched delete
+''')
 # COMMAND -----
 
 # spark.read.format("delta") \
@@ -174,23 +167,3 @@ spark.read.option("startingVersion", "latest").load(c.as_posix()).display()
 #   bronze_supermetrics.testing_testingfirsttest
 # order by
 #   2
-
-
-Path(f"/dbfs/{silver_dir}").mkdir(parents=True, exist_ok=True)
-s = 
-
-get_create_clause()
-q = f'''
-    create table if not exists {silver_db}.{search_name} (
-      queryname varchar(500)
-      , year int
-      , yearmonth varchar(500)
-      , month int
-      , dayofmonth int
-      , dayofweek varchar(500)
-      , {s}
-    )
-    using delta
-    location '{silver_dir}'
-'''
-spark.sql(q)

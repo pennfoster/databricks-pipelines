@@ -1,5 +1,5 @@
 # Databricks notebook source
-# %pip install aiohttp paramiko
+%pip install aiohttp paramiko
 # COMMAND -----
 import pandas as pd
 import re
@@ -7,18 +7,19 @@ from datetime import datetime
 from pathlib import Path
 from pytz import timezone
 
-from pyspark.sql.functions import current_timestamp, lit
+from pyspark.sql.functions import current_timestamp, input_file_name
 
 from data_sources.supermetrics.classes import Supermetrics
 from data_sources.supermetrics.functions import get_url_dataframe, save_json, load_json
-from shared.classes.table_schemas import TableSchemas
 from shared.functions.azure_utilities import get_mount_paths
 
-spark.conf.set("spark.sql.ansi.enabled", True)
+spark.conf.set("spark.sql.ansi.enabled")
 # COMMAND -----
+dbutils.widgets.dropdown("environment", "dev", ["dev", "prd"])
 dbutils.widgets.text("start_date", "")
 dbutils.widgets.text("end_date", "")
 
+# env = dbutils.widgets.get("environment")
 url_df = get_url_dataframe()
 queries = url_df["C001_QueryName"].sort_values().to_list()
 queries += [""]
@@ -30,6 +31,7 @@ if not query_name:
     raise ValueError("Empty query_name parameter provided.")
 row = url_df[url_df["C001_QueryName"] == query_name]
 url = row["C001_URL"].values[0]
+# url = url.replace("/json?", "/keyjson?")
 search_name = row["C001_SearchName"].values[0]
 start_date = dbutils.widgets.get("start_date")
 end_date = dbutils.widgets.get("end_date")
@@ -45,20 +47,22 @@ if date_range:
 
 data_source = "supermetrics"
 paths = get_mount_paths("supermetrics")
-landing_dir = f"{paths.landing}/{search_name.lower()}/{query_name.lower()}"
-bronze_dir = f"{paths.bronze}/{search_name.lower()}/{query_name.lower()}"
-bronze_db = f"bronze_{data_source}"
+landing_dir = f"{paths.landing}/{search_name}/{query_name}"
+bronze_dir = f"{paths.bronze}/{search_name}/{query_name}"
+
 # COMMAND -----
 sm = Supermetrics()
 resp_json = sm.get_data(url)
-if not resp_json["data"]:
+if not resp_json:
     print("No data retrived from API.")
     dbutils.notebook.exit("No data retrived from API.")
+# keyjson = sm.get_keyjson(resp_json)
+
 
 # COMMAND -----
 json_path = save_json(
     dest_dir=Path(f"/dbfs/{landing_dir}"),
-    file_name=f"{query_name.lower()}",
+    file_name=f"{query_name}",
     data=resp_json,
     suffix="timestamp",
     parents=True,
@@ -68,39 +72,47 @@ print(json_path)
 
 # COMMAND -----
 # Load from raw and save to bronze
+spdf = spark.read.json(landing_dir)
+spdf.toDF(*[c.lower() for c in spdf.columns])
+sparkdf = sparkdf.withColumn(
+    "_etl_record_insert_date", current_timestamp()
+).withColumn("_etl_source_file_path", lit(json_path))
+sparkdf.write.format("delta").mode("append").partitionBy("date").option(
+    "mergeSchema", True
+).option("overwriteSchema", True).save(f"{bronze_dir}/{query_name}")
+
 unprocessed = [
     str(file) for file in Path(f"/dbfs/{landing_dir}").iterdir() if file.is_file()
 ]
-ts = TableSchemas(data_source=data_source, table_name=search_name.lower())
-spark.sql(f"create database if not exists {bronze_db}")
+
 for file in unprocessed:
-    resp_json = load_json(f"{file}")
-    sm = Supermetrics()
-    sm.set_metadata(resp_json)
+    # resp_json = load_json(f"{file}")
+    # sm = Supermetrics()
+    # sm.set_metadata(resp_json)
 
-    cols = [i["field_id"].lower() for i in sm.fields]
-    data = resp_json["data"][1:]
+    # cols = [i["field_id"].lower() for i in sm.fields]
+    # data = resp_json["data"][1:]
 
-    df = pd.DataFrame(columns=cols, data=data)
-    df = df.applymap(str)
+    # df = pd.DataFrame(columns=cols, data=data)
+    # df = df.applymap(str)
 
     sparkdf = spark.createDataFrame(df)
-    sparkdf = sparkdf.withColumn("_record_insert_date", current_timestamp()).withColumn(
-        "_source_file_path", lit(json_path)
-    )
+    sparkdf = sparkdf.withColumn(
+        "_etl_record_insert_date", current_timestamp()
+    ).withColumn("_etl_source_file_path", input_file_name())
     sparkdf.write.format("delta").mode("append").partitionBy("date").option(
         "mergeSchema", True
-    ).option("overwriteSchema", True).save(f"{bronze_dir}")
+    ).option("overwriteSchema", True).save(f"{bronze_dir}/{query_name}")
 
     spark.sql(
         f"""
-        create table if not exists {bronze_db}.{search_name.lower()}_{query_name.lower()}
-        location '{bronze_dir}'
+        create table if not exists bronze_supermetrics.{search_name}_{query_name}
+        using delta
+        location '{bronze_dir}/{query_name}'
     """
     )
-    ts.new_column_inserts(cols)
 
-    processed_dir = f"{landing_dir}/processed"
+    processed_dir = f"{raw_dir}/processed"
     Path(f"/dbfs/{processed_dir}").mkdir(parents=False, exist_ok=True)
     dbutils.fs.mv(f"{file}".replace("/dbfs", ""), processed_dir)
 
@@ -137,9 +149,54 @@ dbutils.notebook.exit("SUCCESS")
 # from pyspark.sql.functions import col
 # df_temp.select(*(col(c).cast("float").alias(c) for c in df_temp.columns))
 # df.withColumn("salary",col("salary").cast('double'))
-from pyspark.sql.types import StructType
 
-dfsp_schema = [
-    {"metadata": {}, "name": col, "nullable": True, "type": "string"} for col in cols
-]
-schema = StructType.fromJson({"fields": dfsp_schema})
+
+
+
+resp_json = [{
+[{
+  "RecordNumber": 2,
+  "Zipcode": 704,
+  "ZipCodeType": "STANDARD",
+  "City": "PASEO COSTA DEL SUR",
+  "State": "PR"
+},
+{
+  "RecordNumber": 10,
+  "Zipcode": 709,
+  "ZipCodeType": "STANDARD",
+  "City": "BDA SAN LUIS",
+  "State": "PR"
+}]
+}]
+resp_json2 = [{
+  "RecordNumber": 2.0,
+  "Zipcode": 704.234,
+  "ZipCodeType": "STANDARD",
+  "City": "PASEO COSTA DEL SUR",
+  "State": "PR"
+},
+{
+  "RecordNumber": '',
+  "Zipcode": 709,
+  "ZipCodeType": "STANDARD",
+  "City": "BDA SAN LUIS",
+  "State": "PR"
+}]
+json_path = save_json(
+    dest_dir=Path(f"/dbfs/{landing_dir}"),
+    file_name=f"{query_name}",
+    data=resp_json,
+    suffix="timestamp",
+    parents=True,
+)
+
+json_path = save_json(
+    dest_dir=Path(f"/dbfs/{landing_dir}"),
+    file_name=f"{query_name}",
+    data=resp_json2,
+    suffix="timestamp",
+    parents=True,
+)
+
+print(json_path)

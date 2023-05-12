@@ -5,11 +5,13 @@ from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
 from requests.exceptions import RequestException
 
+from shared.classes.rest_api_base import RESTBase
+
 spark = SparkSession.builder.getOrCreate()
 dbutils = DBUtils(spark)
 
 
-class Supermetrics:
+class Supermetrics(RESTBase):
     def __init__(self) -> None:
         self.fields = None
         self.status = None
@@ -33,10 +35,8 @@ class Supermetrics:
             )
 
     def get_data(self, url: str, params: dict = None) -> json:
-        try:
-            response = requests.get(url=url, params=params)
-        except requests.exceptions.RequestException as e:
-            raise e
+        response = requests.get(url=url, params=params)
+        response.raise_for_status()
 
         self.set_metadata(response.json())
 
@@ -49,17 +49,33 @@ class Supermetrics:
 
         return response.json()
 
-    def get_custom_params_query(self, search_name):
-        if "google" in search_name.lower():
-            query = """
-                customurlparameters:mkwid as mkwid
-                , customurlparameters:dskeyname as mkwid
-                , customurlparameters:pubcode as pubcode
-                , customurlparameters:adkey as adkey
-                , customurlparameters:dskeyword as dskeyword
-            """
-        elif "bing" in search_name.lower():
-            query = """
-            """
+    # def get_keyjson(self, json_resp):
+    #     if not self.fields:
+    #         self.set_metadata(json_resp)
 
-        return query
+    #     data = json_resp["data"][1:]
+    #     columns = [i["id"] for i in self.fields]
+
+    #     keyjson = []
+    #     for row in data:
+    #         pairs = {}
+    #         for k, v in zip(columns, row):
+    #             pairs[k] = v
+    #             keyjson.append(pairs)
+
+    #     return keyjson
+
+    # def get_custom_params_query(self, search_name):
+    #     if "google" in search_name.lower():
+    #         query = """
+    #             customurlparameters:mkwid as mkwid
+    #             , customurlparameters:dskeyname as mkwid
+    #             , customurlparameters:pubcode as pubcode
+    #             , customurlparameters:adkey as adkey
+    #             , customurlparameters:dskeyword as dskeyword
+    #         """
+    #     elif "bing" in search_name.lower():
+    #         query = """
+    #         """
+
+    #     return query

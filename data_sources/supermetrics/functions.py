@@ -5,9 +5,12 @@ from pathlib import Path
 from pytz import timezone
 
 from shared.constants import COMPANY_TIMEZONE
+from shared.functions.databricks_utilities import pass_databricks_env
 
 
-def get_url_dataframe(env: str):
+@pass_databricks_env
+def get_url_dataframe(**kwargs):
+    env = kwargs["env"]
     df = pd.read_csv(
         f"/dbfs/mnt/sadataraw{env}001_control/supermetrics/urls_for_api_rev.csv"
     )
@@ -25,7 +28,9 @@ def save_json(
 
     file_path = f"{dest_dir}/{file_name}.json"
     with open(f"{dest_dir}/{file_name}.json", "w") as file:
-        file.write(json.dumps(data))
+        # file.write(json.dumps(data))
+        # with open("data.json", "w", encoding="utf-8") as f:
+        json.dump(data, file)  # , ensure_ascii=False, indent=4)
 
     return file_path
 
