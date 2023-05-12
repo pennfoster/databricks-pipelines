@@ -93,7 +93,7 @@ def add_deleted_transaction_flag(
     date_partition = Window().partitionBy(transaction_date_col)
 
     latest_df = (
-        input_df.select(input_df["_hash"].alias("latest_hash"))
+        input_df.select(input_df["_row_hash"].alias("latest_hash"))
         .filter(input_df["_latest"] == True)
         .filter(
             input_df[meta_ingestion_date_col]
@@ -103,7 +103,7 @@ def add_deleted_transaction_flag(
     )
 
     join_df = input_df.join(
-        latest_df, on=input_df["_hash"] == latest_df["latest_hash"], how="fullouter"
+        latest_df, on=input_df["_row_hash"] == latest_df["latest_hash"], how="fullouter"
     )
 
     output_df = join_df.withColumn("_deleted", when((join_df["latest_hash"].isNull())))
