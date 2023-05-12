@@ -30,11 +30,9 @@ def add_insert_data(df: DataFrame):
     )
 
 
-def add_data_version_flags_2(
+def add_data_version_flags(
     df: DataFrame,
     partition_by_col: str,
-    internal_date_col: str = None,
-    # internal_deleted_col: str = None,
     meta_ingestion_date_col: str = "_bronze_insert_ts",
 ) -> DataFrame:
     original_columns = [c for c in df.columns if not c.startswith("_")]
@@ -48,7 +46,7 @@ def add_data_version_flags_2(
     hash_partition = Window().partitionBy("_row_hash")
     primary_partition = Window().partitionBy(partition_by_col)
 
-    v_df = hash_df.withColumns(
+    versioned_df = hash_df.withColumns(
         {
             "_initial": when(
                 (
@@ -84,91 +82,89 @@ def add_data_version_flags_2(
         }
     )
 
-    if internal_date_col:
-        latest = [
-            h[0]
-            for h in v_df.select("_row_hash")
-            .where("_latest = TRUE")
-            .distinct()
-            .collect()
-        ]
-        bc_latest = sc.broadcast(latest)
-        internal_date_partition = Window().partitionBy(internal_date_col)
-        vd_df = v_df.withColumn(
-            "_deleted",
-            when(
-                (~v_df["_row_hash"].isin(bc_latest.value))
-                | (
-                    (v_df["_row_hash"].isin(bc_latest.value))
-                    & (
-                        v_df[meta_ingestion_date_col]
-                        != max(meta_ingestion_date_col).over(internal_date_partition)
-                    )
-                ),
-                True,
-            ).otherwise(
-                False,
-            ),
+    return versioned_df
+
+
+def add_deleted_transaction_flag(
+    input_df: DataFrame,
+    transaction_date_col: str,
+    meta_ingestion_date_col: str = "_bronze_insert_ts",
+):
+    date_partition = Window().partitionBy(transaction_date_col)
+
+    latest_df = (
+        input_df.select(input_df["_hash"].alias("latest_hash"))
+        .filter(input_df["_latest"] == True)
+        .filter(
+            input_df[meta_ingestion_date_col]
+            == max(meta_ingestion_date_col).over(date_partition)
         )
-        return vd_df
-
-    return v_df
-
-
-def add_data_version_flags(
-    df: DataFrame,
-    internal_date_col: str,
-    metadata_date_col: str,
-) -> DataFrame:
-    """Adds 3 metadata columns to spark DataFrame:
-        (
-            "_initial_data_for_date",
-            "_most_recent_data_for_date",
-            "_deleted_at_source"
-        )
-    This function *requires* that the DataFrame's metadata column names start with an underscore ("_")
-
-    Args:
-        df (DataFrame): _description_
-        internal_date_col (Union[Column, str]): _description_
-        metadata_date_col (Union[Column, str]): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    original_columns = [c for c in df.columns if not c.startswith("_")]
-
-    current_window = Window().partitionBy(internal_date_col)
-    outdated_window = Window().partitionBy(original_columns)
-
-    output_df = df.withColumns(
-        {
-            "_initial_data_for_date": when(
-                (df[metadata_date_col] == min(metadata_date_col).over(current_window)),
-                True,
-            ).otherwise(
-                False,
-            ),
-            "_most_recent_data_for_date": when(
-                (df[metadata_date_col] == max(metadata_date_col).over(current_window)),
-                True,
-            ).otherwise(
-                False,
-            ),
-            "_deleted_at_source": when(
-                (df[metadata_date_col] != max(metadata_date_col).over(current_window))
-                & (
-                    df[metadata_date_col]
-                    == max(metadata_date_col).over(outdated_window)
-                ),
-                True,
-            ).otherwise(
-                False,
-            ),
-        }
+        .distinct()
     )
 
+    join_df = input_df.join(
+        latest_df, on=input_df["_hash"] == latest_df["latest_hash"], how="fullouter"
+    )
+
+    output_df = join_df.withColumn("_deleted", when((join_df["latest_hash"].isNull())))
+
     return output_df
+
+
+# def add_data_version_flags(
+#     df: DataFrame,
+#     internal_date_col: str,
+#     metadata_date_col: str,
+# ) -> DataFrame:
+#     """Adds 3 metadata columns to spark DataFrame:
+#         (
+#             "_initial_data_for_date",
+#             "_most_recent_data_for_date",
+#             "_deleted_at_source"
+#         )
+#     This function *requires* that the DataFrame's metadata column names start with an underscore ("_")
+
+#     Args:
+#         df (DataFrame): _description_
+#         internal_date_col (Union[Column, str]): _description_
+#         metadata_date_col (Union[Column, str]): _description_
+
+#     Returns:
+#         _type_: _description_
+#     """
+#     original_columns = [c for c in df.columns if not c.startswith("_")]
+
+#     current_window = Window().partitionBy(internal_date_col)
+#     outdated_window = Window().partitionBy(original_columns)
+
+#     output_df = df.withColumns(
+#         {
+#             "_initial_data_for_date": when(
+#                 (df[metadata_date_col] == min(metadata_date_col).over(current_window)),
+#                 True,
+#             ).otherwise(
+#                 False,
+#             ),
+#             "_most_recent_data_for_date": when(
+#                 (df[metadata_date_col] == max(metadata_date_col).over(current_window)),
+#                 True,
+#             ).otherwise(
+#                 False,
+#             ),
+#             "_deleted_at_source": when(
+#                 (df[metadata_date_col] != max(metadata_date_col).over(current_window))
+#                 & (
+#                     df[metadata_date_col]
+#                     == max(metadata_date_col).over(outdated_window)
+#                 ),
+#                 True,
+#             ).otherwise(
+#                 False,
+#             ),
+#         }
+#     )
+
+#     return output_df
 
 
 def get_current_repo_branch():

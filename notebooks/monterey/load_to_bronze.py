@@ -3,6 +3,7 @@ from shared.functions.azure_utilities import get_mount_paths
 from shared.functions.metadata_utilities import (
     add_insert_data,
     add_data_version_flags,
+    add_deleted_transaction_flag,
 )
 
 DATA_SOURCE = "monterey"
@@ -53,20 +54,20 @@ for table_name, columns in table_variables.items():
     )
 
     versioned_df = add_data_version_flags(
-        df=dirty_df,
-        internal_date_col=columns["intertnal_date_column"],
-        metadata_date_col="_bronze_insert_ts",
+        df=dirty_df, partition_by_col=columns["intertnal_date_column"]
     )
 
     # remove unecessary duplicates
     clean_df = versioned_df.filter(
-        (versioned_df["_initial_data_for_date"] == True)
-        | (versioned_df["_most_recent_data_for_date"] == True)
-        | (versioned_df["_deleted_at_source"] == True)
+        (versioned_df["_initial"] == True)
+        | (versioned_df["_latest"] == True)
+        | (versioned_df["_update"] == True)
     )
 
+    final_df = add_deleted_transaction_flag(clean_df, columns["intertnal_date_column"])
+
     #! Is overwriting here correct? Should table be edited in place instead?
-    clean_df.write.format("delta").mode("overwrite").option("mergeSchema", True).option(
+    final_df.write.format("delta").mode("overwrite").option("mergeSchema", True).option(
         "overwriteSchema",
         True,
     ).save(bronze_dest_path)
