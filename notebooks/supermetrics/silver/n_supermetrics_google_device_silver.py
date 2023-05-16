@@ -112,11 +112,10 @@ create_query = f"""
     ;
 """
 spark.sql(create_query)
+
 # COMMAND -----
-# TODO: remove this test insertion
 select_queries = []
 
-# query_list = "AWBingAdGroup"
 for i in query_list:
     history = spark.sql(
         f"describe history {bronze_db}.{search_name.lower()}_{i.lower()}"
@@ -185,6 +184,9 @@ for i in query_list:
         {where_clause_end}
     """
     select_queries.append(select_query)
+
+if not select_queries:
+    dbutils.notebook.exit(f"No table found for {bronze_db}.{search_name}_{i.lower()}.")
 
 # COMMAND -----
 df = spark.sql(" union ".join(select_queries))

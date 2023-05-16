@@ -101,6 +101,7 @@ create_query = f"""
     ;
 """
 spark.sql(create_query)
+
 # COMMAND -----
 select_queries = []
 
@@ -166,6 +167,9 @@ for i in query_list:
     """
     select_queries.append(select_query)
 
+if not select_queries:
+    dbutils.notebook.exit(f"No table found for {bronze_db}.{search_name}_{i.lower()}.")
+    
 # COMMAND -----
 df = spark.sql(" union ".join(select_queries))
 df.createOrReplaceTempView(f"{search_name.lower()}_tmp")

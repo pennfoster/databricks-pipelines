@@ -16,7 +16,7 @@ seven_days_ago = (datetime.now(tz) - timedelta(days=7)).strftime("%Y-%m-%d")
 dbutils.widgets.text("end_date", datetime.now(tz).strftime("%Y-%m-%d"), "")
 dbutils.widgets.combobox("start_date", seven_days_ago, [seven_days_ago, "1900-01-01"])
 
-search_name = "FacebookAds"
+search_name = "FacebookAdset"
 url_df = get_url_dataframe()
 query_list = (
     url_df[url_df["C001_SearchName"] == search_name]["C001_QueryName"]

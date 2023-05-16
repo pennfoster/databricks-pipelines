@@ -109,10 +109,10 @@ create_query = f"""
     ;
 """
 spark.sql(create_query)
+
 # COMMAND -----
 select_queries = []
 
-# query_list = "AWBingAdGroup"
 for i in query_list:
     tables = spark.catalog.listTables(bronze_db)
     tables = [x.name for x in tables]
@@ -192,6 +192,9 @@ for i in query_list:
         {where_clause_end}
     """
     select_queries.append(select_query)
+
+if not select_queries:
+    dbutils.notebook.exit(f"No table found for {bronze_db}.{search_name}_{i.lower()}.")
 
 # COMMAND -----
 df = spark.sql(" union ".join(select_queries))
