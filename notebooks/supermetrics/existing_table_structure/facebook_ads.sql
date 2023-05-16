@@ -1,0 +1,80 @@
+SET
+    ANSI_NULLS ON
+GO
+SET
+    QUOTED_IDENTIFIER ON
+GO
+    CREATE TABLE [dbo].[T016_FacebookAds](
+        [C016_QueryName] [varchar](50) NULL,
+        [C016_Year] [varchar](4) NULL,
+        [C016_YearMonth] [varchar](7) NULL,
+        [C016_Month] [varchar](2) NULL,
+        [C016_DayofMonth] [varchar](2) NULL,
+        [C016_DayofWeek] [varchar](12) NULL,
+        [C016_Account] [varchar](255) NULL,
+        [C016_AccountID] [varchar](255) NULL,
+        [C016_Date] [date] NULL,
+        [C016_CampaignName] [varchar](255) NULL,
+        [C016_CampaignID] [varchar](255) NULL,
+        [C016_CampaignStatus] [varchar](255) NULL,
+        [C016_CampaignDailyBudget] [float] NULL,
+        [C016_CampaignStartDate] [varchar](255) NULL,
+        [C016_CampaignEndDate] [varchar](255) NULL,
+        [C016_AdSetName] [varchar](255) NULL,
+        [C016_AdSetID] [varchar](255) NULL,
+        [C016_AdSetStatus] [varchar](255) NULL,
+        [C016_AdSetStartTime] [varchar](255) NULL,
+        [C016_AdSetEndTime] [varchar](255) NULL,
+        [C016_AdSetTargeting] [varchar](max) NULL,
+        [C016_AdName] [varchar](255) NULL,
+        [C016_AdID] [varchar](255) NULL,
+        [C016_AdStatus] [varchar](255) NULL,
+        [C016_DestinationURL] [varchar](max) NULL,
+        [C016_AdURLTags] [varchar](max) NULL,
+        [C016_TrackingTemplateURL] [varchar](max) NULL,
+        [C016_AdCallToActionType] [varchar](255) NULL,
+        [C016_Cost] [float] NULL,
+        [C016_Reach] [float] NULL,
+        [C016_Impressions] [float] NULL,
+        [C016_CPMCostPer1000Impressions] [float] NULL,
+        [C016_LinkClicks] [float] NULL,
+        [C016_UniqueLinkClicks] [float] NULL,
+        [C016_CTRLinkClickThroughRate] [varchar](255) NULL,
+        [C016_CPCCostPerLinkClick] [float] NULL,
+        [C016_CostPerUniqueLinkClick] [float] NULL,
+        [C016_ThreeSecondVideoViews] [float] NULL,
+        [C016_UniqueThreeSecondVideoViews] [float] NULL,
+        [C016_ThirtySecondVideoViews] [float] NULL,
+        [C016_VideoWatchesAt25Percent] [float] NULL,
+        [C016_VideoWatchesAt50Percent] [float] NULL,
+        [C016_VideoWatchesAt75Percent] [float] NULL,
+        [C016_VideoWatchesAt95Percent] [float] NULL,
+        [C016_VideoWatchesAt100Percent] [float] NULL,
+        [C016_VideoAverageWatchTime] [float] NULL,
+        [C016_ClicksToPlayVideo] [float] NULL,
+        [C016_UniqueClicksToPlayVideo] [float] NULL,
+        [C016_AvgCanvasViewTimeSeconds] [float] NULL,
+        [C016_AvgCanvasViewPercentage] [varchar](255) NULL,
+        [C016_CostPerThreeSecondVideoView] [float] NULL,
+        [C016_WebsiteConversions] [float] NULL,
+        [C016_WebsiteConversionRate] [varchar](255) NULL,
+        [C016_WebsiteCustomConversions] [float] NULL,
+        [C016_WebsiteLeads] [float] NULL,
+        [C016_WebsitePurchases] [float] NULL,
+        [C016_CostPerWebsiteConversion] [float] NULL,
+        [C016_CostPerWebsiteCustomConversions] [float] NULL,
+        [C016_CostPerWebsiteLead] [float] NULL,
+        [C016_CostPerWebsitePurchase] [float] NULL,
+        [C016_VideoPlayActions] [float] NULL,
+        [C016_Frequency] [float] NULL,
+        [C016_Mkwid] [varchar](255) NULL,
+        [C016_Pubcode] [varchar](255) NULL,
+        [C016_Adkey] [varchar](255) NULL,
+        [DateRecordAddedToTable] [datetime2](7) NULL
+    ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+ALTER TABLE
+    [dbo].[T016_FacebookAds]
+ADD
+    CONSTRAINT [DF__T016_Face__DateR__39237A9A] DEFAULT (getdate()) FOR [DateRecordAddedToTable]
+GO

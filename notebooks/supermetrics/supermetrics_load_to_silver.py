@@ -69,7 +69,7 @@ for i in delta_dirs:
     ).toPandas()
     latest_version = history["version"].max()
 
-    ts = TableSchemas(data_source=data_source, table_name=search_name)
+    ts = TableSchemas(data_source=data_source, table_name=search_name.lower())
     select_clause = ts.get_select_clause(nullif="")
     query = f"""
         select

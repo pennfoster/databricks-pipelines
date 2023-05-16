@@ -1,6 +1,7 @@
 # Databricks notebook source
 # %pip install aiohttp paramiko
 # COMMAND -----
+import numpy as np
 import pandas as pd
 import re
 from datetime import datetime
@@ -80,6 +81,10 @@ for file in unprocessed:
 
     cols = [i["field_id"].lower() for i in sm.fields]
     data = resp_json["data"][1:]
+
+    # data = []
+    # for i in resp_data:
+    #     data.append([None if x == "" else x for x in i])
 
     df = pd.DataFrame(columns=cols, data=data)
     df = df.applymap(str)
