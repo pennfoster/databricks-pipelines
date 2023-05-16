@@ -1,9 +1,11 @@
 # Databricks notebook source
+from pyspark.sql.utils import AnalysisException
+
+
 from shared.functions.azure_utilities import get_mount_paths
 from shared.functions.metadata_utilities import (
-    add_insert_data,
-    add_data_version_flags,
-    add_deleted_transaction_flag,
+    add_basic_metadata,
+    add_version_flags,
 )
 
 DATA_SOURCE = "monterey"
@@ -11,22 +13,8 @@ root_raw_path = get_mount_paths(DATA_SOURCE).landing
 
 # COMMAND -----
 table_variables = {
-    "Declines": {
-        "uid_list": [
-            "ClassAccount",
-            "ContractID",
-            "AcctNumber",
-        ],
-        "intertnal_date_column": "PaymentEffectiveDate",
-    },
-    "Transactions": {
-        "uid_list": [
-            "ClassAccount",
-            "ContractID",
-            "AcctNumber",
-        ],
-        "intertnal_date_column": "PaymentEffectiveDate",
-    },
+    "Declines": {"internal_date_column": "PaymentEffectiveDate"},
+    "Transactions": {"internal_date_column": "PaymentEffectiveDate"},
 }
 
 # COMMAND -----
@@ -43,34 +31,30 @@ for table_name, columns in table_variables.items():
     # Raw data with load metadata
     for n, file in enumerate(csv_files):
         if n == 0:
-            raw_df = add_insert_data(spark.read.csv(path=file, header=True))
+            raw_df = add_basic_metadata(spark.read.csv(path=file, header=True))
             continue
-        sub_df = add_insert_data(spark.read.csv(path=file, header=True))
+        sub_df = add_basic_metadata(spark.read.csv(path=file, header=True))
         raw_df = raw_df.unionByName(sub_df, allowMissingColumns=True)
 
     # Union existing with new
-    dirty_df = spark.read.load(bronze_dest_path, "delta").unionByName(
-        raw_df, allowMissingColumns=True
-    )
+    try:
+        bronze_table = spark.read.load(bronze_dest_path)
+        dirty_df = bronze_table.unionByName(raw_df, allowMissingColumns=True)
+    except AnalysisException as e:
+        if "is not a Delta table" in e.desc:
+            dirty_df = raw_df
+        else:
+            raise e
 
-    versioned_df = add_data_version_flags(
-        df=dirty_df, partition_by_col=columns["intertnal_date_column"]
+    versioned_df = add_version_flags(
+        df=dirty_df,
+        partition_by_col=columns["internal_date_column"],
     )
-
-    # remove unecessary duplicates
-    clean_df = versioned_df.filter(
-        (versioned_df["_initial"] == True)
-        | (versioned_df["_latest"] == True)
-        | (versioned_df["_update"] == True)
-    )
-
-    final_df = add_deleted_transaction_flag(clean_df, columns["intertnal_date_column"])
 
     #! Is overwriting here correct? Should table be edited in place instead?
-    final_df.write.format("delta").mode("overwrite").option("mergeSchema", True).option(
-        "overwriteSchema",
-        True,
-    ).save(bronze_dest_path)
+    versioned_df.write.format("delta").mode("overwrite").option(
+        "mergeSchema", True
+    ).option("overwriteSchema", True,).save(bronze_dest_path)
 
     processed_path = f"{raw_source_path}/processed"
     dbutils.fs.mkdirs(processed_path)

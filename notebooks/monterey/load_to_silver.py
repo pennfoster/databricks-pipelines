@@ -9,10 +9,7 @@ silver_path = get_mount_paths(DATA_SOURCE).silver
 for table_fs in dbutils.fs.ls(bronze_path):
     bronze_df = spark.read.load(path=table_fs.path, format="delta")
 
-    current_data = bronze_df.filter(
-        (bronze_df["_most_recent_data_for_date"] == True)
-        & (bronze_df["_deleted_at_source"] == False)
-    )
+    current_data = bronze_df.filter((bronze_df["_latest"] == True))
 
     current_data.write.format("delta").mode("overwrite").option(
         "mergeSchema", True

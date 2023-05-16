@@ -3,7 +3,7 @@
     "email_notifications": {
         "on_failure": [
             "noam.blanks@pennfoster.edu",
-            "nblanks@pennfoster.edu"
+            "ETL"
         ],
         "no_alert_for_skipped_runs": false
     },
@@ -110,7 +110,8 @@
                 "cluster_name": "",
                 "spark_version": "12.2.x-scala2.12",
                 "spark_conf": {
-                    "spark.databricks.delta.preview.enabled": "true"
+                    "spark.databricks.delta.preview.enabled": "true",
+                    "spark.sql.ansi.enabled": "true"
                 },
                 "azure_attributes": {
                     "first_on_demand": 1,

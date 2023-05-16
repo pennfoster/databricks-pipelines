@@ -3,7 +3,10 @@
 from pyspark.sql.utils import AnalysisException
 
 from shared.functions.azure_utilities import get_mount_paths
-from shared.functions.metadata_utilities import add_data_version_flags, add_insert_data
+from shared.functions.metadata_utilities import (
+    add_basic_metadata,
+    add_version_flags,
+)
 
 mnt_path = get_mount_paths("marketo")
 
@@ -11,21 +14,20 @@ failures = {}
 table_variables = {
     "activities/": {
         "uid": "marketoguid",
-        "date_field": "activitydate"
         # json activity column. unpack?
     },
-    "channels/": {"uid": "id", "date_field": "updatedAt"},
-    "email_templates/": {"uid": "id", "date_field": "updatedAt"},
-    "emails/": {"uid": "id", "date_field": "updatedAt"},
-    "form_fields/": {"uid": "id", "date_field": "_bronze_insert_ts"},
-    "forms/": {"uid": "id", "date_field": "updatedAt"},
-    "landing_pages/": {"uid": "id", "date_field": "updatedAt"},
-    "leads/": {"uid": "id", "date_field": "updatedAt"},
-    "snippets/": {"uid": "id", "date_field": "updatedAt"},
-    "programs/": {"uid": "id", "date_field": "updatedAt"},
-    "smart_campaigns/": {"uid": "id", "date_field": "updatedAt"},
-    "smart_lists/": {"uid": "id", "date_field": "updatedAt"},
-    # "static_lists/": {"uid": "id", "date_field": "updatedAt"},  # empty
+    "channels/": {"uid": "id"},
+    "email_templates/": {"uid": "id"},
+    "emails/": {"uid": "id"},
+    "form_fields/": {"uid": "id"},
+    "forms/": {"uid": "id"},
+    "landing_pages/": {"uid": "id"},
+    "leads/": {"uid": "id"},
+    "snippets/": {"uid": "id"},
+    "programs/": {"uid": "id"},
+    "smart_campaigns/": {"uid": "id"},
+    "smart_lists/": {"uid": "id"},
+    # "static_lists/": {"uid": "id"},  # empty
 }
 
 # COMMAND -----
@@ -62,12 +64,11 @@ for table in dbutils.fs.ls(mnt_path.landing):
             if jsonl_files:
                 df = spark.read.json(path=jsonl_files)
 
-            i_df = add_insert_data(df)
-
+            file_df = add_basic_metadata(df)
             if n == 0:
-                raw_df = i_df
+                raw_df = file_df
                 continue
-            raw_df = raw_df.unionByName(i_df, allowMissingColumns=True)
+            raw_df = raw_df.unionByName(file_df, allowMissingColumns=True)
 
         # Union new data with existing bronze
         try:
@@ -79,21 +80,13 @@ for table in dbutils.fs.ls(mnt_path.landing):
             dirty_df = raw_df
 
         # Update versioning flags
-        versioned_df = add_data_version_flags(
+        versioned_df = add_version_flags(
             df=dirty_df,
-            internal_date_col=table_variables[table.name]["date_field"],
-            metadata_date_col="_bronze_insert_ts",
-        )
-
-        # Drop duplicates
-        clean_df = versioned_df.filter(
-            (versioned_df["_initial_data_for_date"] == True)
-            | (versioned_df["_most_recent_data_for_date"] == True)
-            | (versioned_df["_deleted_at_source"] == True)
+            partition_by_col=table_variables[table.name]["uid"],
         )
 
         # Write to bronze
-        clean_df.write.format("delta").mode("overwrite").option(
+        versioned_df.write.format("delta").mode("overwrite").option(
             "mergeSchema", True
         ).option("overwriteSchema", True,).save(bronze_table_path)
 
