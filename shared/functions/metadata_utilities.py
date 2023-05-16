@@ -4,7 +4,16 @@ import pendulum
 from pyspark.context import SparkContext
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession, DataFrame, Window
-from pyspark.sql.functions import input_file_name, lit, when, min, max, concat_ws, sha2
+from pyspark.sql.functions import (
+    input_file_name,
+    lit,
+    when,
+    min,
+    max,
+    concat_ws,
+    sha2,
+    to_json,
+)
 
 spark = SparkSession.builder.getOrCreate()
 sc = SparkContext.getOrCreate()
@@ -25,11 +34,26 @@ def add_basic_metadata(df: DataFrame, filename_override: str = None):
     Returns:
         DataFrame
     """
-    sorted_columns = sorted([c for c in df.columns if not c.startswith("_")])
+
+    sorted_columns = sorted(
+        [c for c in df.dtypes if not c[0].startswith("_")],
+        key=lambda x: x[0],
+    )
 
     return df.withColumns(
         {
-            "_row_hash": lit(sha2(concat_ws("|", *sorted_columns), 256)),
+            "_row_hash": lit(
+                sha2(
+                    concat_ws(
+                        "|",
+                        *[
+                            to_json(name) if "struct" in dtype else name
+                            for name, dtype in sorted_columns
+                        ],
+                    ),
+                    256,
+                )
+            ),
             "_bronze_insert_ts": lit(pendulum.now()),
             "_bronze_update_ts": lit(pendulum.now()),
             "_code_version": lit(get_current_repo_branch()),
