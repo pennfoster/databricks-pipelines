@@ -99,7 +99,7 @@
                 "init_scripts": [
                     {
                         "workspace": {
-                            "destination": "/Repos/nblanks@pennfoster.edu/databricks-pipelines/etl-cluster-init.sh"
+                            "destination": "/Repos/ETL/databricks-pipelines/etl-cluster-init.sh"
                         }
                     }
                 ],
