@@ -13,6 +13,7 @@ from shared.functions.azure_utilities import get_mount_paths
 # COMMAND -----
 NAME = "supermetrics_loads_raw_bronze_silver"
 CLUSTER_ID = "0412-221025-lwdq2fc5"
+REQUIREMENTS_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/requirements.sh"
 
 BRONZE_NOTEBOOK_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/bronze/supermetrics_load_to_bronze"
 # SILVER_NOTEBOOK_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/supermetrics_load_to_silver"
