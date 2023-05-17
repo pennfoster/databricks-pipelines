@@ -42,6 +42,7 @@ jobs:
           echo "job_name=$(echo "$JOB_VARS" | jq -r '.name')" >> "$GITHUB_OUTPUT";
           echo "cicd_tag=$(echo "$JOB_VARS" | jq -r '.tags.workflow')" >> "$GITHUB_OUTPUT";
           echo "task_filepaths='$(echo "$JOB_VARS" | jq -c ['.tasks[].notebook_task.notebook_path'])'" >> "$GITHUB_OUTPUT";
+          echo "cluster_init_paths='$(echo "$JOB_VARS" | jq -c ['.job_clusters[].new_cluster.init_scripts[].workspace.destination'])'" >> "$GITHUB_OUTPUT";
       - name: Assure Correct Tag
         run: |
           if [ "${{ steps.job_vars.outputs.cicd_tag }}" != "CI/CD" ]
@@ -49,7 +50,7 @@ jobs:
               echo "Job ${{ steps.job_vars.outputs.job_name }} is missing required \"workflow: CI/CD\" tag";
               exit 1;
           fi
-      - name: Assure Correct Filepaths
+      - name: Assure Correct Notebook Filepaths
         run: |
           for FP in $(echo ${{ steps.job_vars.outputs.task_filepaths }} | jq -r .[]);
             do
@@ -60,4 +61,18 @@ jobs:
                   echo $FP;
                   exit 1
               fi
+            done  
+      - name: Assure Correct Init Filepaths
+        run: |
+          echo ${{ steps.job_vars.outputs.cluster_init_paths }};
+          for FP in $(echo ${{ steps.job_vars.outputs.cluster_init_paths }} | jq -r .[]);
+            do
+              if [[ $FP =~ ^\/Repos\/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}\/.*$ ]]
+                then
+                  echo "In Job ${{ steps.job_vars.outputs.job_name }}:";
+                  echo "Job init filepath is set to personal workspace:";
+                  echo $FP;
+                  exit 1
+              fi
             done
+          
