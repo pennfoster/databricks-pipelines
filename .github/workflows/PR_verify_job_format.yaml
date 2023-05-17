@@ -42,7 +42,7 @@ jobs:
           echo "job_name=$(echo "$JOB_VARS" | jq -r '.name')" >> "$GITHUB_OUTPUT";
           echo "cicd_tag=$(echo "$JOB_VARS" | jq -r '.tags.workflow')" >> "$GITHUB_OUTPUT";
           echo "task_filepaths='$(echo "$JOB_VARS" | jq -c ['.tasks[].notebook_task.notebook_path'])'" >> "$GITHUB_OUTPUT";
-          echo "cluster_init_paths='$(echo "$JOB_VARS" | jq -c ['.job_clusters[].init_scripts[].workspace.destination'])'" >> "$GITHUB_OUTPUT";
+          echo "cluster_init_paths='$(echo "$JOB_VARS" | jq -c ['.job_clusters[].new_cluster.init_scripts[].workspace.destination'])'" >> "$GITHUB_OUTPUT";
       - name: Assure Correct Tag
         run: |
           if [ "${{ steps.job_vars.outputs.cicd_tag }}" != "CI/CD" ]
