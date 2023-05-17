@@ -64,6 +64,7 @@ jobs:
             done  
       - name: Assure Correct Init Filepaths
         run: |
+          echo ${{ steps.job_vars.outputs.cluster_init_paths }};
           for FP in $(echo ${{ steps.job_vars.outputs.cluster_init_paths }} | jq -r .[]);
             do
               if [[ $FP =~ ^\/Repos\/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}\/.*$ ]]
