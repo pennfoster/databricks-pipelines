@@ -196,6 +196,3 @@ spark.sql(
    ;
 """
 )
-
-# COMMAND -----
-dbutils.notebook.exit("SUCCESS")

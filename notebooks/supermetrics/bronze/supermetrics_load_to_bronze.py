@@ -108,6 +108,3 @@ for file in unprocessed:
     processed_dir = f"{landing_dir}/processed"
     Path(f"/dbfs/{processed_dir}").mkdir(parents=False, exist_ok=True)
     dbutils.fs.mv(f"{file}".replace("/dbfs", ""), processed_dir)
-
-# COMMAND -----
-dbutils.notebook.exit("SUCCESS")
