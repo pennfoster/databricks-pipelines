@@ -11,10 +11,11 @@ from data_sources.supermetrics.functions import get_url_dataframe, save_json
 from shared.functions.azure_utilities import get_mount_paths
 
 # COMMAND -----
-NAME = "supermetrics_loads"
+NAME = "supermetrics_loads_raw_bronze_silver"
 CLUSTER_ID = "0412-221025-lwdq2fc5"
-BRONZE_NOTEBOOK_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/supermetrics_load_to_bronze"
-SILVER_NOTEBOOK_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/supermetrics_load_to_silver"
+
+BRONZE_NOTEBOOK_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/bronze/supermetrics_load_to_bronze"
+# SILVER_NOTEBOOK_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/supermetrics_load_to_silver"
 EMAIL_NOTIFICATIONS = {
     "on_success": [],
     "on_failure": ["bhorn@pennfoster.edu"],
@@ -46,24 +47,27 @@ for i in df.index:
 # COMMAND -----
 silver_tasks = []
 for search_name in df["C001_SearchName"].unique():
+    silver_notebook_path = f"/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/silver/supermetrics_{search_name.lower()}_silver"
     parameters = {"search_name": search_name}
     dependents = [
-        {"task_key": key}
+        {"task_key": f"{key}_bronze"}
         for key in df[df["C001_SearchName"] == search_name]["C001_QueryName"].tolist()
     ]
 
     task = {
         "task_key": f"{search_name}_silver",
         "notebook_task": {
-            "notebook_path": SILVER_NOTEBOOK_PATH,
+            "notebook_path": silver_notebook_path,
             "base_parameters": parameters,
         },
         "depends_on": dependents,
         "existing_cluster_id": CLUSTER_ID,
     }
     silver_tasks.append(task)
+
 # COMMAND -----
 tasks = bronze_tasks + silver_tasks
+
 # COMMAND -----
 config = {
     "settings": {},

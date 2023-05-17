@@ -116,9 +116,9 @@ select_queries = []
 for i in query_list:
     tables = spark.catalog.listTables(bronze_db)
     tables = [x.name for x in tables]
-    if f'{search_name.lower()}_{i.lower()}' not in tables:
+    if f"{search_name.lower()}_{i.lower()}" not in tables:
         continue
-    
+
     history = spark.sql(
         f"describe history {bronze_db}.{search_name.lower()}_{i.lower()}"
     ).toPandas()
@@ -218,61 +218,3 @@ spark.sql(
 
 # COMMAND -----
 dbutils.notebook.exit("SUCCESS")
-
-
-
-
-
-queryname,
-date,
-year,
-yearmonth,
-month,
-dayofmonth,
-dayofweek,
-adid,
-customparameters,
-accountname,
-accountid,
-accountnumber,
-campaignname,
-campaignid,
-status,
-adgroupname,
-adgroupid,
-adgroupstatus,
-adtitle,
-adtitlepart1,
-adtitlepart2,
-adtitlepart3,
-adpathpart1,
-adpathpart2,
-addescription,
-addescription2,
-adtype,
-adstatus,
-finalurl,
-displayurl,
-trackingtemplate,
-campaignlabels,
-adgrouplabels,
-adlabels,
-try_cast(impressions as float) as impressions,
-try_cast(clicks as float) as clicks,
-try_cast(cost as float) as cost,
-try_cast(ctrpercentage as float) as ctrpercentage,
-try_cast(cpc as float) as cpc,
-try_cast(cpm as float) as cpm,
-try_cast(averageposition as float) as averageposition,
-try_cast(conversions as float) as conversions,
-conversionrate string,
-conversionsperimpressionrate string,
-try_cast(costperconversion as float) as costperconversion,
-try_cast(revenueperconversion as float) as revenueperconversion,
-try_cast(revenue as float) as revenue,
-try_cast(returnonadspend as float) as returnonadspend,
-mkwid,
-pubcode,
-adkey,
-_record_insert_date
-

@@ -108,9 +108,9 @@ select_queries = []
 for i in query_list:
     tables = spark.catalog.listTables(bronze_db)
     tables = [x.name for x in tables]
-    if f'{search_name.lower()}_{i.lower()}' not in tables:
+    if f"{search_name.lower()}_{i.lower()}" not in tables:
         continue
-    
+
     history = spark.sql(
         f"describe history {bronze_db}.{search_name.lower()}_{i.lower()}"
     ).toPandas()
@@ -169,7 +169,7 @@ for i in query_list:
 
 if not select_queries:
     dbutils.notebook.exit(f"No table found for {bronze_db}.{search_name}_{i.lower()}.")
-    
+
 # COMMAND -----
 df = spark.sql(" union ".join(select_queries))
 df.createOrReplaceTempView(f"{search_name.lower()}_tmp")
@@ -192,87 +192,3 @@ spark.sql(
 
 # COMMAND -----
 dbutils.notebook.exit("SUCCESS")
-
-
-
-
-
-# queryname string,
-# date date,
-# year string,
-# yearmonth string,
-# month string,
-# dayofmonth string,
-# dayofweek string,
-# devicetype string,
-# keyword string,
-# keywordid string,
-# adid string,
-# adgroupname string,
-# adgroupid string,
-# campaignname string,
-# campaignid string,
-# accountname string,
-# accountid string,
-# accountnumber string,
-# status string,
-# campaigntype string,
-# adgroupstatus string,
-# adtype string,
-# adstatus string,
-# try_cast(impressions as float) as impressions,
-# try_cast(clicks as float) as clicks,
-# try_cast(cost as float) as cost,
-# try_cast(ctrpercent as float) as ctrpercent,
-# try_cast(cpc as float) as cpc,
-# try_cast(cpm as float) as cpm,
-# try_cast(averageposition as float) as averageposition,
-# try_cast(conversions as float) as conversions,
-# conversionrate string,
-# conversionsperimpressionrate string,
-# try_cast(costperconversion as float) as costperconversion,
-# try_cast(revenueperconversion as float) as revenueperconversion,
-# try_cast(revenue as float) as revenue,
-# try_cast(returnonadspend as float) as returnonadspend,
-# _record_insert_date timestamp
-
-
-
-[C012_QueryName] [varchar](50) NULL,
-        [C012_Date] [date] NULL,
-        [C012_Year] [varchar](255) NULL,
-        [C012_YearMonth] [varchar](255) NULL,
-        [C012_Month] [varchar](255) NULL,
-        [C012_DayofMonth] [varchar](255) NULL,
-        [C012_DayofWeek] [varchar](255) NULL,
-        [C012_DeviceType] [varchar](255) NULL,
-        [C012_Keyword] [varchar](255) NULL,
-        [C012_KeywordID] [varchar](255) NULL,
-        [C012_AdID] [varchar](255) NULL,
-        [C012_AdGroupName] [varchar](255) NULL,
-        [C012_AdGroupID] [varchar](255) NULL,
-        [C012_CampaignName] [varchar](255) NULL,
-        [C012_CampaignID] [varchar](255) NULL,
-        [C012_AccountName] [varchar](255) NULL,
-        [C012_AccountID] [varchar](255) NULL,
-        [C012_AccountNumber] [varchar](255) NULL,
-        [C012_STATUS] [varchar](255) NULL,
-        [C012_CampaignType] [varchar](255) NULL,
-        [C012_AdGroupStatus] [varchar](255) NULL,
-        [C012_AdType] [varchar](255) NULL,
-        [C012_AdStatus] [varchar](255) NULL,
-        [C012_Impressions] [float] NULL,
-        [C012_Clicks] [float] NULL,
-        [C012_Cost] [float] NULL,
-        [C012_CtrPercent] [float] NULL,
-        [C012_Cpc] [float] NULL,
-        [C012_Cpm] [float] NULL,
-        [C012_AveragePosition] [float] NULL,
-        [C012_Conversions] [float] NULL,
-        [C012_ConversionRate] [varchar](255) NULL,
-        [C012_ConversionsPerImpressionRate] [varchar](255) NULL,
-        [C012_CostPerConversion] [float] NULL,
-        [C012_RevenuePerConversion] [float] NULL,
-        [C012_Revenue] [float] NULL,
-        [C012_ReturnOnAdSpend] [float] NULL,
-        [DateRecordAddedToTable] [datetime2](7) NULL
