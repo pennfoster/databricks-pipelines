@@ -1,24 +1,31 @@
 {
-    "name": "marketo.rest",
+    "name": "lead_mantra.rest",
     "email_notifications": {
+        "on_failure": [
+            "noam.blanks@pennfoster.edu"
+        ],
         "no_alert_for_skipped_runs": false
     },
     "webhook_notifications": {},
+    "notification_settings": {
+        "no_alert_for_skipped_runs": false,
+        "no_alert_for_canceled_runs": false
+    },
     "timeout_seconds": 0,
     "schedule": {
         "quartz_cron_expression": "0 0 0 * * ?",
-        "timezone_id": "America/New_York",
+        "timezone_id": "UTC",
         "pause_status": "PAUSED"
     },
     "max_concurrent_runs": 1,
     "tasks": [
         {
-            "task_key": "get_assets",
+            "task_key": "get_leads",
             "notebook_task": {
-                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/get_assets",
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/get_leads",
                 "source": "WORKSPACE"
             },
-            "job_cluster_key": "Job_cluster",
+            "job_cluster_key": "New_job_cluster",
             "timeout_seconds": 0,
             "email_notifications": {},
             "notification_settings": {
@@ -28,15 +35,12 @@
             }
         },
         {
-            "task_key": "get_bulk_activities",
+            "task_key": "get_campaigns",
             "notebook_task": {
-                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/get_bulk_exports",
-                "base_parameters": {
-                    "api_object": "activities"
-                },
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/get_campaigns",
                 "source": "WORKSPACE"
             },
-            "job_cluster_key": "Job_cluster",
+            "job_cluster_key": "New_job_cluster",
             "timeout_seconds": 0,
             "email_notifications": {},
             "notification_settings": {
@@ -46,20 +50,69 @@
             }
         },
         {
-            "task_key": "get_bulk_leads",
+            "task_key": "get_lead_message_logs",
             "depends_on": [
                 {
-                    "task_key": "get_bulk_activities"
+                    "task_key": "get_lead_message_attempts"
                 }
             ],
             "notebook_task": {
-                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/get_bulk_exports",
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/get_lead_assets",
                 "base_parameters": {
-                    "api_object": "leads"
+                    "asset": "message_log",
+                    "lead_status": "open"
                 },
                 "source": "WORKSPACE"
             },
-            "job_cluster_key": "Job_cluster",
+            "job_cluster_key": "New_job_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        },
+        {
+            "task_key": "get_lead_status",
+            "depends_on": [
+                {
+                    "task_key": "get_leads"
+                }
+            ],
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/get_lead_assets",
+                "base_parameters": {
+                    "asset": "lead_status",
+                    "lead_status": "open"
+                },
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "New_job_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        },
+        {
+            "task_key": "get_lead_message_attempts",
+            "depends_on": [
+                {
+                    "task_key": "get_lead_status"
+                }
+            ],
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/get_lead_assets",
+                "base_parameters": {
+                    "asset": "message_attempt",
+                    "lead_status": "open"
+                },
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "New_job_cluster",
             "timeout_seconds": 0,
             "email_notifications": {},
             "notification_settings": {
@@ -72,17 +125,17 @@
             "task_key": "load_to_bronze",
             "depends_on": [
                 {
-                    "task_key": "get_assets"
+                    "task_key": "get_lead_message_logs"
                 },
                 {
-                    "task_key": "get_bulk_leads"
+                    "task_key": "get_campaigns"
                 }
             ],
             "notebook_task": {
-                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/load_to_bronze",
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/load_to_bronze",
                 "source": "WORKSPACE"
             },
-            "job_cluster_key": "Job_cluster",
+            "job_cluster_key": "New_job_cluster",
             "timeout_seconds": 0,
             "email_notifications": {},
             "notification_settings": {
@@ -99,10 +152,10 @@
                 }
             ],
             "notebook_task": {
-                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/marketo/load_to_silver",
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/load_to_silver",
                 "source": "WORKSPACE"
             },
-            "job_cluster_key": "Job_cluster",
+            "job_cluster_key": "New_job_cluster",
             "timeout_seconds": 0,
             "email_notifications": {},
             "notification_settings": {
@@ -114,7 +167,7 @@
     ],
     "job_clusters": [
         {
-            "job_cluster_key": "Job_cluster",
+            "job_cluster_key": "New_job_cluster",
             "new_cluster": {
                 "cluster_name": "",
                 "spark_version": "12.2.x-scala2.12",
@@ -141,7 +194,7 @@
                 ],
                 "data_security_mode": "SINGLE_USER",
                 "runtime_engine": "STANDARD",
-                "num_workers": 4
+                "num_workers": 8
             }
         }
     ],
