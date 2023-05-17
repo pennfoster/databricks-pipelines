@@ -31,7 +31,7 @@ jobs:
         id: update_jobs
         uses: databricks/run-notebook@v0
         with:
-          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
+          workspace-notebook-path: /Repos/ETL/databricks-pipelines/notebooks/ci_cd/update_env_jobs
           libraries-json: >
             [
               {"pypi": {"package": "aiohttp==3.8.4"}},

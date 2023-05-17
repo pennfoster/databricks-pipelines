@@ -53,7 +53,7 @@ jobs:
             [
               {"key": "jobs_branch", "value": "staging"}
             ]
-          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/update_env_jobs
+          workspace-notebook-path: /Repos/ETL/databricks-pipelines/notebooks/ci_cd/update_env_jobs
           access-control-list-json: >
             [
               {
