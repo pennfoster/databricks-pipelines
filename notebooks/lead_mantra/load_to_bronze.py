@@ -51,7 +51,7 @@ for table in dbutils.fs.ls(mnt_path.landing):
             raise e
 
     # Update versioning flags
-    uid_column = table_variables[table]["uid"]
+    uid_column = table_variables[table.name]["uid"]
     versioned_df = add_version_flags(
         df=dirty_df,
         partition_by_col=uid_column,
