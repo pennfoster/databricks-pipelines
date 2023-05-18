@@ -80,8 +80,9 @@ for table in dbutils.fs.ls(mnt_path.landing):
             if any(
                 [s in e.desc for s in ["Path does not exist", "is not a Delta table"]]
             ):
+                dirty_df = raw_df
+            else:
                 raise e
-            dirty_df = raw_df
 
         # Update versioning flags
         versioned_df = add_version_flags(
