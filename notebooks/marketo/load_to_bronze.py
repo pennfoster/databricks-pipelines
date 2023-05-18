@@ -1,5 +1,7 @@
 # Databricks notebook source
 # DBTITLE 1, Imports and Variables
+import logging
+
 from pyspark.sql.utils import AnalysisException
 
 from shared.functions.azure_utilities import get_mount_paths
@@ -27,7 +29,7 @@ table_variables = {
     "programs/": {"uid": "id"},
     "smart_campaigns/": {"uid": "id"},
     "smart_lists/": {"uid": "id"},
-    # "static_lists/": {"uid": "id"},  # empty
+    "static_lists/": {"uid": "id"},
 }
 
 # COMMAND -----
@@ -99,6 +101,8 @@ for table in dbutils.fs.ls(mnt_path.landing):
         print(f"{table.name} complete")
 
     except Exception as e:
+        logging.warning("Failure in %s" % table.name)
+        logging.warning(e.__reduce__())
         failures[table.name] = e.__repr__()
         continue
 

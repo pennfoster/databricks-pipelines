@@ -21,6 +21,11 @@
     "tasks": [
         {
             "task_key": "get_leads",
+            "depends_on": [
+                {
+                    "task_key": "get_campaigns"
+                }
+            ],
             "notebook_task": {
                 "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/get_leads",
                 "source": "WORKSPACE"
@@ -77,7 +82,7 @@
             "task_key": "get_lead_status",
             "depends_on": [
                 {
-                    "task_key": "get_leads"
+                    "task_key": "load_primaries_to_bronze"
                 }
             ],
             "notebook_task": {
@@ -122,13 +127,10 @@
             }
         },
         {
-            "task_key": "load_to_bronze",
+            "task_key": "load_assets_to_bronze",
             "depends_on": [
                 {
                     "task_key": "get_lead_message_logs"
-                },
-                {
-                    "task_key": "get_campaigns"
                 }
             ],
             "notebook_task": {
@@ -148,11 +150,34 @@
             "task_key": "load_to_silver",
             "depends_on": [
                 {
-                    "task_key": "load_to_bronze"
+                    "task_key": "load_assets_to_bronze"
                 }
             ],
             "notebook_task": {
                 "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/load_to_silver",
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "New_job_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        },
+        {
+            "task_key": "load_primaries_to_bronze",
+            "depends_on": [
+                {
+                    "task_key": "get_leads"
+                },
+                {
+                    "task_key": "get_campaigns"
+                }
+            ],
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/lead_mantra/load_to_bronze",
                 "source": "WORKSPACE"
             },
             "job_cluster_key": "New_job_cluster",
