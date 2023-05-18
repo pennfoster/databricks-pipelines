@@ -77,7 +77,9 @@ for table in dbutils.fs.ls(mnt_path.landing):
             bronze_table = spark.read.load(f"{mnt_path.bronze}/{table.name}")
             dirty_df = bronze_table.unionByName(raw_df, allowMissingColumns=True)
         except AnalysisException as e:
-            if not ("is not a Delta table" in e.desc):
+            if any(
+                [s in e.desc for s in ["Path does not exist", "is not a Delta table"]]
+            ):
                 raise e
             dirty_df = raw_df
 
