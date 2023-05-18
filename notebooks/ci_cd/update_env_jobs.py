@@ -13,7 +13,6 @@ jobs_branch = dbutils.widgets.get("jobs_branch")
 
 # COMMAND ----------
 # DBTITLE 1, Get Extant and New Jobs Metadataz
-
 orch = Orchestration()
 repo_jobs = orch.get_repo_jobs(jobs_repo, jobs_path, jobs_branch)
 extant_jobs = orch.get_current_env_jobs()
@@ -61,5 +60,4 @@ for job in to_be_added:
 
 # COMMAND ----------
 # DBTITLE 1, Output Updated Job IDs JSON String
-
 dbutils.notebook.exit(json.dumps(output_job_ids))

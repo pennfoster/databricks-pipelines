@@ -4,13 +4,14 @@ import requests
 from typing import List, Dict, Tuple
 
 import aiohttp
+import nest_asyncio
 from pyspark.sql import SparkSession
 from pyspark.dbutils import DBUtils
 
 from shared.classes import RESTBase
 from shared.functions.azure_utilities import get_key_vault_scope
 
-
+nest_asyncio.apply()
 spark = SparkSession.builder.getOrCreate()
 dbutils = DBUtils(spark)
 
