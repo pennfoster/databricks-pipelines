@@ -16,7 +16,7 @@ jobs:
           curl -L -X PATCH '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
             -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' \
             -H 'Content-Type: application/json' \
-            -d '{"branch": "${{ github.base_ref }}"}'
+            -d '{"branch": "${{ github.head_ref }}"}'
   
   update_jobs:
     needs: pull_latest_commit
@@ -43,7 +43,7 @@ jobs:
             ]
           notebook-params-json: >
             [
-              {"key": "jobs_branch", "value": "${{ github.base_ref }}"}
+              {"key": "jobs_branch", "value": "${{ github.head_ref }}"}
             ]
           new-cluster-json: >
             {
