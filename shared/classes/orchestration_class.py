@@ -70,6 +70,8 @@ class Orchestration(RESTBase):
             if job.get("schedule"):
                 if _get_dbricks_env() != "prd":
                     job["schedule"]["pause_status"] = "PAUSED"
+                if _get_dbricks_env() == "prd":
+                    job["schedule"]["pause_status"] = "UNPAUSED"
             # Databricks API returns field as float, UI returns field as integer.
             # This interfears with correct comparison hashing.
             in_clusters = job["job_clusters"]
