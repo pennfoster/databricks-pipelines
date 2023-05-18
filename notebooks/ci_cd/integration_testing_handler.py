@@ -1,6 +1,5 @@
 # Databricks notebook source
 # DBTITLE 1, Setup
-
 import json
 import logging
 import time
@@ -9,7 +8,6 @@ from shared.classes import Orchestration
 
 # COMMAND ------------------------
 # DBTITLE 1, Instantiate Variables
-
 orch = Orchestration()
 jobs = orch.get_current_env_jobs()
 
