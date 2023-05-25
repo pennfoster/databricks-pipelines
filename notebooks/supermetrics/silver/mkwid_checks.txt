@@ -1,0 +1,11 @@
+BingAdGroup
+bingkeyword
+bingsearchads
+facebookadset
+facebookcampaign
+googleadgroup
+check googlekeyword datatypes this doesnt seem right
+also check googlekeyword mkwid values seems too easy
+
+googlenonsearchads
+googlesearchads

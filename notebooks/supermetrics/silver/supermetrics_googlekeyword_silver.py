@@ -1,6 +1,4 @@
 # Databricks notebook source
-# %pip install aiohttp paramiko
-# COMMAND -----
 from datetime import datetime, timedelta
 from pytz import timezone
 
@@ -130,9 +128,13 @@ for i in query_list:
         f"describe history {bronze_db}.{search_name.lower()}_{i.lower()}"
     ).toPandas()
     latest_version = history["version"].max()
+
+    query_version = url_df[url_df["C001_QueryName"] == i]["QueryNameVersion"].values[0]
+    query_version = f"V{query_version}" if query_version > 1 else ""
+
     select_query = f"""
         select
-            '{i}' as queryname,
+            '{i + query_version}' as queryname,
             date as date,
             keyword,
             customurlparameters,
@@ -140,7 +142,7 @@ for i in query_list:
             year(date) || '|' || month(date) as yearmonth,
             month(date) as month,
             day(date) as dayofmonth,
-            day(date) || ' ' || date_format(date, 'EEEE') as dayofweek,
+            dayofweek(date) || ' ' || date_format(date, 'EEEE') as dayofweek,
             profile,
             profileid,
             campaignname,
@@ -151,8 +153,8 @@ for i in query_list:
             adgroupid,
             adgroupstatus,
             finalurl,
-            finalmobileurls as finalmobileurl,
-            trackingurltemplate,
+            finalmobileurls::string as finalmobileurl,
+            trackingurltemplate::string,
             matchtype,
             keywordid,
             keywordstatus,
@@ -161,7 +163,7 @@ for i in query_list:
             topofpagecpc,
             firstpositioncpc,
             campaignlabels,
-            adgrouplabels,
+            adgrouplabels::string,
             labels,
             impressions,
             clicks,
@@ -195,6 +197,8 @@ for i in query_list:
             {bronze_db}.{search_name.lower()}_{i.lower()}@v{latest_version}
         {where_clause_start}
         {where_clause_end}
+        qualify
+          dense_rank() over(partition by date order by _record_insert_date desc) = 1
     """
     select_queries.append(select_query)
 

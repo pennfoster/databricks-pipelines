@@ -1,5 +1,5 @@
 # Databricks notebook source
-# %pip install aiohttp paramiko
+
 # COMMAND -----
 import numpy as np
 import pandas as pd
@@ -12,11 +12,12 @@ from pyspark.sql.functions import current_timestamp, lit
 
 from data_sources.supermetrics.classes import Supermetrics
 from data_sources.supermetrics.functions import get_url_dataframe, save_json, load_json
-from shared.classes.table_schemas import TableSchemas
+
+# from shared.classes.table_schemas import TableSchemas
 from shared.functions.azure_utilities import get_mount_paths
 
 spark.conf.set("spark.sql.ansi.enabled", True)
-# COMMAND -----
+
 dbutils.widgets.text("start_date", "")
 dbutils.widgets.text("end_date", "")
 
@@ -72,7 +73,7 @@ print(json_path)
 unprocessed = [
     str(file) for file in Path(f"/dbfs/{landing_dir}").iterdir() if file.is_file()
 ]
-ts = TableSchemas(data_source=data_source, table_name=search_name.lower())
+# ts = TableSchemas(data_source=data_source, table_name=search_name.lower())
 spark.sql(f"create database if not exists {bronze_db}")
 for file in unprocessed:
     resp_json = load_json(f"{file}")
@@ -82,16 +83,15 @@ for file in unprocessed:
     cols = [i["field_id"].lower() for i in sm.fields]
     data = resp_json["data"][1:]
 
-    # data = []
-    # for i in resp_data:
-    #     data.append([None if x == "" else x for x in i])
-
     df = pd.DataFrame(columns=cols, data=data)
     df = df.applymap(str)
+    df = df.replace("", np.nan, regex=False)
+    df = df.replace(" ", np.nan, regex=False)
+    # df = df.astype(str)
 
     sparkdf = spark.createDataFrame(df)
     sparkdf = sparkdf.withColumn("_record_insert_date", current_timestamp()).withColumn(
-        "_source_file_path", lit(json_path)
+        "_source_file_path", lit(file)
     )
     sparkdf.write.format("delta").mode("append").partitionBy("date").option(
         "mergeSchema", True
@@ -103,7 +103,7 @@ for file in unprocessed:
         location '{bronze_dir}'
     """
     )
-    ts.new_column_inserts(cols)
+    # ts.new_column_inserts(cols)
 
     processed_dir = f"{landing_dir}/processed"
     Path(f"/dbfs/{processed_dir}").mkdir(parents=False, exist_ok=True)

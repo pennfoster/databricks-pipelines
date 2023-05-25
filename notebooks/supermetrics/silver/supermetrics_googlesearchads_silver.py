@@ -1,6 +1,4 @@
 # Databricks notebook source
-# %pip install aiohttp paramiko
-# COMMAND -----
 from datetime import datetime, timedelta
 from pytz import timezone
 
@@ -90,20 +88,20 @@ create_query = f"""
         labels string,
         impressions int,
         clicks int,
-        cost float,
+        cost decimal(38, 4),
         ctr string,
-        cpc float,
-        cpm float,
-        conversions float,
+        cpc decimal(38, 4),
+        cpm decimal(38, 4),
+        conversions decimal(38, 4),
         conversionrate string,
         conversionsperimpression string,
-        costperconversion float,
-        valueperconversion float,
-        totalconversionvalue float,
-        returnonadspend float,
-        viewthroughconversions float,
-        allconversions float,
-        allconversionvalue float,
+        costperconversion decimal(38, 4),
+        valueperconversion decimal(38, 4),
+        totalconversionvalue decimal(38, 4),
+        returnonadspend decimal(38, 4),
+        viewthroughconversions decimal(38, 4),
+        allconversions decimal(38, 4),
+        allconversionvalue decimal(38, 4),
         mkwid string,
         pubcode string,
         adkey string,
@@ -129,15 +127,19 @@ for i in query_list:
         f"describe history {bronze_db}.{search_name.lower()}_{i.lower()}"
     ).toPandas()
     latest_version = history["version"].max()
+
+    query_version = url_df[url_df["C001_QueryName"] == i]["QueryNameVersion"].values[0]
+    query_version = f"V{query_version}" if query_version > 1 else ""
+
     select_query = f"""
         select
-            '{i}' as queryname,
+            '{i + query_version}' as queryname,
             date as date,
             year(date) as year,
             year(date) || '|' || month(date) as yearmonth,
             month(date) as month,
             day(date) as dayofmonth,
-            day(date) || ' ' || date_format(date, 'EEEE') as dayofweek,
+            dayofweek(date) || ' ' || date_format(date, 'EEEE') as dayofweek,
             adid,
             customurlparameters,
             profile,
@@ -149,7 +151,7 @@ for i in query_list:
             adgroupname,
             adgroupid,
             adgroupstatus,
-            headline,
+            headline::string,
             headlinepart1,
             headlinepart2,
             headlinepart3,
@@ -163,27 +165,27 @@ for i in query_list:
             adtype,
             adstatus,
             finalurl,
-            trackingurltemplate,
+            trackingurltemplate::string,
             campaignlabels,
-            adgrouplabels,
+            adgrouplabels::string,
             adlabels,
             labels,
-            try_cast(impressions as int) as impressions,
-            try_cast(clicks as int) as clicks,
-            try_cast(cost as float) as cost,
+            impressions::int as impressions,
+            clicks::int as clicks,
+            cost::decimal(38, 4) as cost,
             ctr,
-            try_cast(cpc as float) as cpc,
-            try_cast(cpm as float) as cpm,
-            try_cast(conversions as float) as conversions,
+            cpc::decimal(38, 4) as cpc,
+            cpm::decimal(38, 4) as cpm,
+            conversions::decimal(38, 4) as conversions,
             conversionrate,
             cpi as conversionsperimpression,
-            try_cast(costperconversion as float) as costperconversion,
-            try_cast(valueperconvmanyperclick as float) as valueperconversion,
-            try_cast(conversionvalue as float) as totalconversionvalue,
-            try_cast(roas as float) as returnonadspend,
-            try_cast(viewthroughconversions as float) as viewthroughconversions,
-            try_cast(estimatedtotalconversions as float) as allconversions,
-            try_cast(estimatedtotalconversionvalue as float) as allconversionvalue,
+            costperconversion::decimal(38, 4) as costperconversion,
+            valueperconvmanyperclick::decimal(38, 4) as valueperconversion,
+            conversionvalue::decimal(38, 4) as totalconversionvalue,
+            roas::decimal(38, 4) as returnonadspend,
+            viewthroughconversions::decimal(38, 4) as viewthroughconversions,
+            estimatedtotalconversions::decimal(38, 4) as allconversions,
+            estimatedtotalconversionvalue::decimal(38, 4) as allconversionvalue,
             customurlparameters:mkwid,
             customurlparameters:pubcode,
             customurlparameters:adkey,
@@ -193,6 +195,8 @@ for i in query_list:
             {bronze_db}.{search_name.lower()}_{i.lower()}@v{latest_version}
         {where_clause_start}
         {where_clause_end}
+        qualify
+          dense_rank() over(partition by date order by _record_insert_date desc) = 1
     """
     select_queries.append(select_query)
 

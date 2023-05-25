@@ -1,17 +1,9 @@
 # Databricks notebook source
-# %pip install aiohttp paramiko
-# COMMAND -----
-import os
-import pandas as pd
-import re
 from datetime import datetime, timedelta
-from pathlib import Path
 from pytz import timezone
 
-from data_sources.supermetrics.classes import Supermetrics
-from shared.classes.table_schemas import TableSchemas
 from shared.functions.azure_utilities import get_mount_paths
-from data_sources.supermetrics.functions import get_url_dataframe, save_json, load_json
+from data_sources.supermetrics.functions import get_url_dataframe
 from shared.constants import COMPANY_TIMEZONE
 
 spark.conf.set("spark.sql.ansi.enabled", True)
@@ -80,25 +72,25 @@ create_query = f"""
         deliveredmatchtype string,
         keywordid string,
         keywordstatus string,
-        currentmaxcpc decimal(9, 2),
+        currentmaxcpc decimal(38, 4),
         campaignlabels string,
         adgrouplabels string,
         keywordlabels string,
         impressions int,
         clicks int,
-        cost decimal(9, 2),
-        ctrpercent float,
-        cpc decimal(9, 2),
-        cpm decimal(9, 2),
-        averageposition float,
+        cost decimal(38, 4),
+        ctrpercent decimal(38, 4),
+        cpc decimal(38, 4),
+        cpm decimal(38, 4),
+        averageposition decimal(38, 4),
         qualityscore int,
         conversions int,
         conversionrate string,
         conversionsperimpressionrate string,
-        costperconversion decimal(9, 2),
-        revenueperconversion decimal(9, 2),
-        revenue decimal(9, 2),
-        returnonadspend float,
+        costperconversion decimal(38, 4),
+        revenueperconversion decimal(38, 4),
+        revenue decimal(38, 4),
+        returnonadspend decimal(38, 4),
         mkwid string,
         pubcode string,
         adkey string,
@@ -122,10 +114,14 @@ for i in query_list:
     history = spark.sql(
         f"describe history {bronze_db}.{search_name.lower()}_{i.lower()}"
     ).toPandas()
+
     latest_version = history["version"].max()
+    query_version = url_df[url_df["C001_QueryName"] == i]["QueryNameVersion"].values[0]
+    query_version = f"V{query_version}" if query_version > 1 else ""
+
     select_query = f"""
         select
-            '{i}' as queryname,
+            '{i + query_version}' as queryname,
             date,
             keyword,
             customparameters as customurlparameters,
@@ -133,7 +129,7 @@ for i in query_list:
             year(date) || '|' || month(date) as yearmonth,
             month(date) as month,
             day(date) as dayofmonth,
-            day(date) || ' ' || date_format(date, 'EEEE') as dayofweek,
+            dayofweek(date) || ' ' || date_format(date, 'EEEE') as dayofweek,
             accountname,
             accountid,
             accountnumber,
@@ -152,21 +148,21 @@ for i in query_list:
             campaignlabels,
             adgrouplabels,
             keywordlabels,
-            try_cast(impressions as int) as impressions,
-            try_cast(clicks as int) as clicks,
-            try_cast(spend as decimal(9, 2)) as cost,
-            try_cast(ctr as float) as ctrpercent,
-            try_cast(cpc as decimal(9, 2)) as cpc,
-            try_cast(cpm as decimal(9, 2)) as cpm,
-            try_cast(averageposition as float) as averageposition,
-            try_cast(qualityscore as int) as qualityscore,
-            try_cast(conversions as int) as conversions,
+            impressions::int as impressions,
+            clicks::int as clicks,
+            spend::decimal(38,4) as cost,
+            ctr::decimal(38,4) as ctrpercent,
+            cpc::decimal(38,4) as cpc,
+            cpm::decimal(38,4) as cpm,
+            nullif(averageposition, 'None')::decimal(38,4) as averageposition,
+            qualityscore::int as qualityscore,
+            conversions::int as conversions,
             conversionrate,
             cpi as conversionsperimpressionrate,
-            try_cast(costperconversion as decimal(9, 2)) as costperconversion,
-            try_cast(revenueperconversion as decimal(9, 2)) as revenueperconversion,
-            try_cast(revenue as decimal(9, 2)) as revenue,
-            try_cast(roas as float) as returnonadspend,
+            costperconversion::decimal(38,4) as costperconversion,
+            revenueperconversion::decimal(38,4) as revenueperconversion,
+            revenue::decimal(38,4) as revenue,
+            roas::decimal(38,4) as returnonadspend,
             case 
               when contains(customparameters, '_mkwid') then split(split(customparameters, '_mkwid}}=')[1], ';')[0] 
               else null
@@ -184,6 +180,8 @@ for i in query_list:
             {bronze_db}.{search_name.lower()}_{i.lower()}@v{latest_version}
         {where_clause_start}
         {where_clause_end}
+        qualify
+          dense_rank() over(partition by date order by _record_insert_date desc) = 1
     """
     select_queries.append(select_query)
 

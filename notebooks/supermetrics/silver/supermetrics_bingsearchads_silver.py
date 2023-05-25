@@ -1,6 +1,4 @@
 # Databricks notebook source
-# %pip install aiohttp paramiko
-# COMMAND -----
 from datetime import datetime, timedelta
 from pytz import timezone
 
@@ -85,20 +83,20 @@ create_query = f"""
         campaignlabels string,
         adgrouplabels string,
         adlabels string,
-        impressions float,
-        clicks float,
-        cost float,
-        ctrpercentage float,
-        cpc float,
-        cpm float,
-        averageposition float,
-        conversions float,
+        impressions decimal(38, 4),
+        clicks decimal(38, 4),
+        cost decimal(38, 4),
+        ctrpercentage decimal(38, 4),
+        cpc decimal(38, 4),
+        cpm decimal(38, 4),
+        averageposition decimal(38, 4),
+        conversions decimal(38, 4),
         conversionrate string,
         conversionsperimpressionrate string,
-        costperconversion float,
-        revenueperconversion float,
-        revenue float,
-        returnonadspend float,
+        costperconversion decimal(38, 4),
+        revenueperconversion decimal(38, 4),
+        revenue decimal(38, 4),
+        returnonadspend decimal(38, 4),
         mkwid string,
         pubcode string,
         adkey string,
@@ -123,17 +121,21 @@ for i in query_list:
         f"describe history {bronze_db}.{search_name.lower()}_{i.lower()}"
     ).toPandas()
     latest_version = history["version"].max()
+
+    query_version = url_df[url_df["C001_QueryName"] == i]["QueryNameVersion"].values[0]
+    query_version = f"V{query_version}" if query_version > 1 else ""
+
     select_query = f"""
         select
-            '{i}' as queryname,
+            '{i + query_version}' as queryname,
             date,
             year(date) as year,
             year(date) || '|' || month(date) as yearmonth,
             month(date) as month,
             day(date) as dayofmonth,
-            day(date) || ' ' || date_format(date, 'EEEE') as dayofweek,
+            dayofweek(date) || ' ' || date_format(date, 'EEEE') as dayofweek,
             adid,
-            customparameters,
+            customparameters::string,
             accountname,
             accountid,
             accountnumber,
@@ -143,7 +145,7 @@ for i in query_list:
             adgroupname,
             adgroupid,
             adgroupstatus,
-            adtitle,
+            adtitle::string,
             adtitlepart1,
             adtitlepart2,
             adtitlepart3,
@@ -155,24 +157,24 @@ for i in query_list:
             adstatus,
             finalurl,
             displayurl,
-            trackingtemplate,
+            trackingtemplate::string,
             campaignlabels,
-            adgrouplabels,
+            adgrouplabels::string,
             adlabels,
-            try_cast(impressions as float) as impressions,
-            try_cast(clicks as float) as clicks,
-            try_cast(spend as float) as cost,
-            try_cast(ctr as float) as ctrpercentage,
-            try_cast(cpc as float) as cpc,
-            try_cast(cpm as float) as cpm,
-            try_cast(averageposition as float) as averageposition,
-            try_cast(conversions as float) as conversions,
+            impressions::decimal(38, 4) as impressions,
+            clicks::decimal(38, 4) as clicks,
+            spend::decimal(38, 4) as cost,
+            ctr::decimal(38, 4) as ctrpercentage,
+            cpc::decimal(38, 4) as cpc,
+            cpm::decimal(38, 4) as cpm,
+            nullif(averageposition, 'None') as averageposition,
+            conversions::decimal(38, 4) as conversions,
             conversionrate,
             cpi as conversionsperimpressionrate,
-            try_cast(costperconversion as float) as costperconversion,
-            try_cast(revenueperconversion as float) as revenueperconversion,
-            try_cast(revenue as float) as revenue,
-            try_cast(roas as float) as returnonadspend,
+            costperconversion::decimal(38, 4) as costperconversion,
+            revenueperconversion::decimal(38, 4) as revenueperconversion,
+            revenue::decimal(38, 4) as revenue,
+            roas::decimal(38, 4) as returnonadspend,
             case 
               when contains(customparameters, '_mkwid') then split(split(customparameters, '_mkwid}}=')[1], ';')[0] 
               else null
@@ -190,6 +192,8 @@ for i in query_list:
             {bronze_db}.{search_name.lower()}_{i.lower()}@v{latest_version}
         {where_clause_start}
         {where_clause_end}
+        qualify
+          dense_rank() over(partition by date order by _record_insert_date desc) = 1
     """
     select_queries.append(select_query)
 
