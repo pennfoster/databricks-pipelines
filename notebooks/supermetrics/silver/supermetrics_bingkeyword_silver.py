@@ -155,7 +155,7 @@ for i in query_list:
             cpc::decimal(38,4) as cpc,
             cpm::decimal(38,4) as cpm,
             nullif(averageposition, 'None')::decimal(38,4) as averageposition,
-            qualityscore::int as qualityscore,
+            try_cast(qualityscore as int) as qualityscore,
             conversions::int as conversions,
             conversionrate,
             cpi as conversionsperimpressionrate,
