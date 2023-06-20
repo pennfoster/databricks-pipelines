@@ -165,7 +165,6 @@ class LeadMantraREST(RESTBase):
                     return {**request_body, **output}
                 if type(output) is list:
                     return [{**request_body, **item} for item in output]
-        except aiohttp.ClientResponseError as e:
-            print("campaign_id: ", campaign_id)
-            print("external_system_id: ", external_system_id)
+        except Exception as e:
+            logging.error((url, request_body))
             raise e

@@ -1,9 +1,8 @@
 # Databricks notebook source
-
-import asyncio, json, math
+import asyncio, json, logging, math, time
 from pathlib import Path
 
-import pendulum
+import pendulum, aiohttp
 import numpy as np
 
 from data_sources.lead_mantra.classes import LeadMantraREST
@@ -76,16 +75,30 @@ json_key_map = {
 # COMMAND ----------
 with open(f"/dbfs/{filepath}", "a") as file:
     for n, sublist in enumerate(chunked_id_pairs):
-        print(f"Running batch {n+1} of {len(chunked_id_pairs)}...")
-        data = asyncio.run(
-            lm.get_lead_asset(
-                endpoint=f"campaign-leads/get_{w_asset}",
-                json_key=json_key_map[w_asset],
-                id_pairs=sublist,
-            )
-        )
-        file.writelines((json.dumps(row) + "\n" for row in data))
-        print(f"Batch {n+1} complete - {len(data)} rows written to file.")
+        for attempt in range(1, 4):
+            try:
+                print(f"Running batch {n+1} of {len(chunked_id_pairs)}...")
+                data = asyncio.run(
+                    lm.get_lead_asset(
+                        endpoint=f"campaign-leads/get_{w_asset}",
+                        json_key=json_key_map[w_asset],
+                        id_pairs=sublist,
+                    )
+                )
+                file.writelines((json.dumps(row) + "\n" for row in data))
+                print(f"Batch {n+1} complete - {len(data)} rows written to file.")
+            except aiohttp.ClientConnectionError as e:
+                logging.error(e)
+                logging.warning("ClientConnectionError. Sleeping for 60 seconds")
+                time.sleep(60)
+                logging.warning("Retry %s of 3" % attempt)
+            except asyncio.TimeoutError as e:
+                logging.error(e)
+                logging.warning("Timeout Error. Sleeping for 60 seconds")
+                time.sleep(60)
+                logging.warning("Retry %s of 3" % attempt)
+            else:
+                break
 # COMMAND ----------
 df = spark.read.json(filepath)
 display(df)
