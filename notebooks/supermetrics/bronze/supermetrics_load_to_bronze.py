@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from pytz import timezone
 
-from pyspark.sql.functions import current_timestamp, lit
+from pyspark.sql.functions import col, current_timestamp, lit
 
 from data_sources.supermetrics.classes import Supermetrics
 from data_sources.supermetrics.functions import get_url_dataframe, save_json, load_json
@@ -96,7 +96,7 @@ for file in unprocessed:
     sparkdf.write.format("delta").mode("append").partitionBy("date").option(
         "mergeSchema", True
     ).option("overwriteSchema", True).save(f"{bronze_dir}")
-
+    sparkdf = sparkdf.select([col(c).cast("string") for c in sparkdf.columns])
     spark.sql(
         f"""
         create table if not exists {bronze_db}.{search_name.lower()}_{query_name.lower()}

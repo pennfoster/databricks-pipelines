@@ -13,7 +13,7 @@ from shared.functions.azure_utilities import get_mount_paths
 # COMMAND -----
 DATASOURCE = "bingadgroup"
 
-NAME = "supermetrics_{DATASOURCE}_loads_raw_bronze_silver"
+NAME = f"supermetrics_{DATASOURCE}_loads_raw_bronze_silver"
 
 CLUSTER_ID = "0412-221025-lwdq2fc5"
 REQUIREMENTS_PATH = "/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/requirements.sh"
@@ -30,6 +30,7 @@ CONTROL_DIR = paths.control
 # COMMAND -----
 df = get_url_dataframe()
 df = df[df["C001_SearchName"].str.lower() == DATASOURCE.lower()]
+df.reset_index(drop=True, inplace=True)
 
 bronze_tasks = []
 for i in df.index:
