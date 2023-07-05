@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, Literal
 from typing_extensions import ParamSpec
 
 from pyspark import SparkContext
@@ -10,24 +10,29 @@ _P = ParamSpec("_P")
 _T = TypeVar("_T")
 
 
+def _get_dbricks_env() -> Literal["dev", "ADBSmlDev01", "prd", "qa", "pfcarrusdata"]:
+    sc = SparkContext.getOrCreate()
+
+    environment_dict = {
+        "6104815453986823": "dev",  # dbw-datateam-dev001
+        "7121333149039885": "ADBSmlDev01",  # ADBSmlDev01
+        "8282478637069706": "prd",  # dbw-datateam-prd001
+        "6890081793644013": "qa",  # dbw-datateam-qa001
+        "2211778133336071": "pfcarrusdata",  # pfcarrusdata
+    }
+    workspace_id = sc.getConf().get(
+        "spark.databricks.clusterUsageTags.clusterOwnerOrgId"
+    )
+
+    return environment_dict[workspace_id]
+
+
 # Decorator to pass current db instance into function as kwarg
 def pass_databricks_env(func: Callable[_P, _T]) -> Callable[_P, _T]:
     def _func(*args, **kwargs):
-        sc = SparkContext.getOrCreate()
+        kwargs["env"] = _get_dbricks_env()
 
-        environment_dict = {
-            "6104815453986823": "dev",  # dbw-datateam-dev001
-            "7121333149039885": "ADBSmlDev01",  # ADBSmlDev01
-            "8282478637069706": "prd",  # dbw-datateam-prd001
-            # "2211778133336071": "prd",  # pfcarrusdata
-        }
-        workspace_id = sc.getConf().get(
-            "spark.databricks.clusterUsageTags.clusterOwnerOrgId"
-        )
-
-        kwargs["env"] = environment_dict[workspace_id]
-
-        if kwargs["env"] not in ["dev", "prd"]:
+        if kwargs["env"] not in ["dev", "qa", "prd"]:
             logging.error("Env detection not yet tested for this environment")
             raise ValueError("Code used in environment other than intended")
 

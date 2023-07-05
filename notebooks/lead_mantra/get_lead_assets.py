@@ -3,6 +3,7 @@
 import asyncio, json, math
 from pathlib import Path
 
+import pendulum
 import numpy as np
 
 from data_sources.lead_mantra.classes import LeadMantraREST
@@ -37,13 +38,33 @@ bronze_root = get_mount_paths("lead_mantra").bronze
 bronze_leads = spark.read.load(path=f"{bronze_root}/leads")
 
 filter_status = {"open": "1", "closed": "0", "both": "0,1"}
+# id_pairs = (
+#     bronze_leads.filter(f"lead_status in ({filter_status[w_lead_status]})")
+#     .filter((bronze_leads.external_system_id != '') | (bronze_leads._bronze_insert_ts >))
+#     .select(["campaign_id", "external_system_id"])
+#     .distinct()
+#     .collect()
+# )
+from pyspark.sql.functions import to_date, lit
+
+bronze_root = get_mount_paths("lead_mantra").bronze
+bronze_leads = spark.read.load(path=f"{bronze_root}/leads")
+
+filter_status = {"open": [1], "closed": [0], "both": [0, 1]}
 id_pairs = (
-    bronze_leads.filter(f"lead_status in ({filter_status[w_lead_status]})")
-    .filter("external_system_id != ''")
+    bronze_leads.filter(
+        (bronze_leads["lead_status"].isin(filter_status[w_lead_status]))
+        | (
+            to_date(bronze_leads["_bronze_insert_ts"])
+            > to_date(lit(str(pendulum.now().subtract(days=7).date())))
+        )
+    )
+    .filter((bronze_leads["external_system_id"] != ""))
     .select(["campaign_id", "external_system_id"])
     .distinct()
     .collect()
 )
+
 chunked_id_pairs = np.array_split(id_pairs, math.ceil(len(id_pairs) / 5000))
 # COMMAND ----------
 # TODO - move this somewhere more reasonable...

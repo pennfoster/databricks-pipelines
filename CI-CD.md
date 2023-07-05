@@ -32,22 +32,36 @@
 1. Pull from `main` branch and merge into development branch to ensure current code
    1. Resolve merge conflicts
 2. Submit Pull Request
-3. Code review
-   1. Notes/rejection: Return to development
-4. Approve Pull Request
-5. Merge (`squash?`) to `main` and delete `origin/<name_of_branch>`
 
-## Testing
+### Automated PR Testing
 
-1. (at any step revert changes & return to development loop on failure)
-2. Automatic formatting check
-3. Automatic unit tests
-4. Automatic code coverage test
-5. Automatic push updated `main` to QA/UAT enviornment
-6. Automatic new/changed data pipeline execution
-7. Manual user acceptance testing by stakeholders as needed
+   1. Is Python code in PEP8 format?
+   2. Do unit tests pass?
+   3. Do new jobs have correct tags to allow for CI/CD workflow?
+   4. Are new jobs pointing at the correct filepaths?
 
-## Delivery & Deployment
+## Code Review
 
-1. Manual approval of production workflow
-2. Automatically push approved `main` to production environment.
+1. Code review by at least one other (more?)
+   1. If minor notes, make edits and recommit.
+   2. If major notes, close PR, return to dev loop.
+2. Approve Pull Request
+3. Merge (`squash?`) to `main` and delete `origin/<name_of_branch>`
+
+### Automated Push to QA
+
+   1. Update/Create/Delete changed dbricks jobs
+      1. Jobs in QA should be paused.
+      2. Create ADF "scheduler jobs".
+   2. Trigger changed dbricks jobs
+
+## QA Review
+
+1. Manually (gross) confirm status of triggered jobs.
+2. Manual data validation.
+3. Manual user acceptance testing.
+4. At least *n* reviewers must approve before next step.
+
+### Automated Delivery & Deployment
+
+1. Automatically push approved `main` to production environment.

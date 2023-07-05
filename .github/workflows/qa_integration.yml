@@ -1,0 +1,116 @@
+name: QA - Update and Trigger Jobs in Staging
+
+on:
+  pull_request:
+    types: closed
+    branches: staging
+
+jobs:
+  pull_latest_commit_to_dbricks:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: API post request
+        run: |
+          curl \
+            -L -X PATCH '${{vars.DATABRICKS_HOST}}/api/2.0/repos/${{vars.DATABRICKS_REPO_ID}}' \
+            -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' \
+            -H 'Content-Type: application/json' \
+            -d '{"branch": "staging"}'
+  
+  update_jobs:
+    needs: pull_latest_commit_to_dbricks
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      DATABRICKS_HOST: ${{vars.DATABRICKS_HOST}}
+      DATABRICKS_TOKEN: ${{secrets.DATABRICKS_TOKEN}}
+    outputs:
+      matrix: ${{ steps.update_jobs.outputs.notebook-output }}
+    steps:
+# Documentation for Databricks specific actions found @ https://github.com/databricks/run-notebook/blob/main/action.yml    
+      - name: Update jobs
+        id: update_jobs
+        uses: databricks/run-notebook@v0
+        with:
+          new-cluster-json: >
+            {
+              "num_workers": 1,
+              "spark_version": "11.3.x-scala2.12",
+              "node_type_id": "Standard_F4"
+            }
+          libraries-json: >
+            [
+              {"pypi": {"package": "aiohttp==3.8.4"}},
+              {"pypi": {"package": "oauthlib==3.2.2"}},
+              {"pypi": {"package": "paramiko==3.1.0"}},
+              {"pypi": {"package": "pendulum==2.1.2"}},
+              {"pypi": {"package": "requests==2.28.2"}},
+              {"pypi": {"package": "requests-oauthlib==1.3.1"}}
+            ]
+          notebook-params-json: >
+            [
+              {"key": "jobs_branch", "value": "staging"}
+            ]
+          workspace-notebook-path: /Repos/ETL/databricks-pipelines/notebooks/ci_cd/update_env_jobs
+          access-control-list-json: >
+            [
+              {
+                "group_name": "users",
+                "permission_level": "CAN_VIEW"
+              }
+            ]
+
+  trigger_jobs:
+    needs: update_jobs
+    if: ${{ needs.update_jobs.outputs.matrix != '' && toJson(fromJson(needs.update_jobs.outputs.matrix)) != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        job_id: ${{ fromJson(needs.update_jobs.outputs.matrix) }}
+    environment: staging
+    steps:
+      - name: Trigger Job n
+        run: |
+          curl \
+            -L -X POST '${{vars.DATABRICKS_HOST}}/api/2.1/jobs/run-now' \
+            -H 'Authorization: Bearer ${{secrets.DATABRICKS_TOKEN}}' \
+            -H 'Content-Type: application/json' \
+            -d '{"job_id": "${{ matrix.job_id }}"}'
+
+  start_test_sensor:
+    needs: update_jobs
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      DATABRICKS_HOST: ${{vars.DATABRICKS_HOST}}
+      DATABRICKS_TOKEN: ${{secrets.DATABRICKS_TOKEN}}
+    steps:
+      - name: Trigger test sensor
+        id: update_jobs
+        uses: databricks/run-notebook@v0
+        with:
+          workspace-notebook-path: /Repos/ETL/databricks_pipelines/notebooks/ci_cd/integration_testing_handler
+          libraries-json: >
+            [
+              {"pypi": {"package": "aiohttp==3.8.4"}},
+              {"pypi": {"package": "oauthlib==3.2.2"}},
+              {"pypi": {"package": "paramiko==3.1.0"}},
+              {"pypi": {"package": "pendulum==2.1.2"}},
+              {"pypi": {"package": "requests==2.28.2"}},
+              {"pypi": {"package": "requests-oauthlib==1.3.1"}}
+            ]
+          new-cluster-json: >
+            {
+              "num_workers": 1,
+              "spark_version": "11.3.x-scala2.12",
+              "node_type_id": "Standard_F4"
+            }
+          access-control-list-json: >
+            [
+              {
+                "group_name": "users",
+                "permission_level": "CAN_VIEW"
+              }
+            ]

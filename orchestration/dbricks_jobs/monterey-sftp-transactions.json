@@ -1,0 +1,116 @@
+{
+    "name": "monterey.sftp.transactions",
+    "email_notifications": {
+        "on_failure": [
+            "noam.blanks@pennfoster.edu",
+            "nblanks@pennfoster.edu"
+        ],
+        "no_alert_for_skipped_runs": false
+    },
+    "webhook_notifications": {},
+    "notification_settings": {
+        "no_alert_for_skipped_runs": false,
+        "no_alert_for_canceled_runs": false
+    },
+    "timeout_seconds": 0,
+    "schedule": {
+        "quartz_cron_expression": "0 0 0 * * ?",
+        "timezone_id": "UTC",
+        "pause_status": "PAUSED"
+    },
+    "max_concurrent_runs": 1,
+    "tasks": [
+        {
+            "task_key": "sftp_to_raw",
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/monterey/get_transaction_files",
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "get_csvs_from_sftp_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        },
+        {
+            "task_key": "load_to_bronze",
+            "depends_on": [
+                {
+                    "task_key": "sftp_to_raw"
+                }
+            ],
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/monterey/load_to_bronze",
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "get_csvs_from_sftp_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        },
+        {
+            "task_key": "load_to_silver",
+            "depends_on": [
+                {
+                    "task_key": "load_to_bronze"
+                }
+            ],
+            "notebook_task": {
+                "notebook_path": "/Repos/ETL/databricks-pipelines/notebooks/monterey/load_to_silver",
+                "source": "WORKSPACE"
+            },
+            "job_cluster_key": "get_csvs_from_sftp_cluster",
+            "timeout_seconds": 0,
+            "email_notifications": {},
+            "notification_settings": {
+                "no_alert_for_skipped_runs": false,
+                "no_alert_for_canceled_runs": false,
+                "alert_on_last_attempt": false
+            }
+        }
+    ],
+    "job_clusters": [
+        {
+            "job_cluster_key": "get_csvs_from_sftp_cluster",
+            "new_cluster": {
+                "cluster_name": "",
+                "spark_version": "12.2.x-scala2.12",
+                "spark_conf": {
+                    "spark.databricks.delta.preview.enabled": "true",
+                    "spark.sql.ansi.enabled": "true"
+                },
+                "azure_attributes": {
+                    "first_on_demand": 1,
+                    "availability": "ON_DEMAND_AZURE",
+                    "spot_bid_max_price": -1
+                },
+                "node_type_id": "Standard_F4",
+                "spark_env_vars": {
+                    "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+                },
+                "enable_elastic_disk": true,
+                "init_scripts": [
+                    {
+                        "workspace": {
+                            "destination": "/Repos/ETL/databricks-pipelines/etl-cluster-init.sh"
+                        }
+                    }
+                ],
+                "data_security_mode": "SINGLE_USER",
+                "runtime_engine": "STANDARD",
+                "num_workers": 4
+            }
+        }
+    ],
+    "tags": {
+        "workflow": "CI/CD"
+    },
+    "format": "MULTI_TASK"
+}

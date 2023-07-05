@@ -9,6 +9,7 @@ from requests_oauthlib import OAuth2Session
 from requests.exceptions import RequestException
 
 from shared.functions.azure_utilities import get_key_vault_scope
+from shared.functions.file_io import generate_unique_filename
 from shared.classes import RESTBase
 
 # defines dbutils for the module
@@ -58,6 +59,24 @@ class MarketoREST(RESTBase):
         if not response.json()["success"]:
             logging.error(response.json())
             raise ValueError('request "success" field returned `False`')
+
+    def get_lead_fields(self) -> List[str]:
+        """The leads bulk export object has ~1300 fields available. The only way to get
+        them all is to list them explicitly. This method assures updates to the list are
+        captured
+
+        Returns:
+            List[str]: Field names for rest api.
+        """
+        self._get_bearer_token()
+
+        url = f"{self.domain}/rest/v1/leads/describe.json"
+        response = requests.get(url, headers=self.auth_header)
+        self._assure_request_success(response)
+
+        fields = response.json()["result"]
+
+        return [f["rest"]["name"] for f in fields]
 
     def create_async_export_job(
         self,
@@ -118,7 +137,8 @@ class MarketoREST(RESTBase):
         with requests.get(url, headers=self.auth_header, stream=True) as download:
             directory = Path(f"/dbfs/{self.storage_paths.landing}/{api_object}")
             directory.mkdir(exist_ok=True)
-            filepath = f"{directory}/ts-{pendulum.now().int_timestamp}_{job_id}.csv"
+            filename = generate_unique_filename(api_object)
+            filepath = f"{directory}/{filename}.csv"
 
             with open(filepath, "wb") as file:
                 for chunk in download.iter_content(chunk_size=(10 * (1024**2))):
@@ -167,8 +187,10 @@ class MarketoREST(RESTBase):
         errors = response.json().get("errors") or []
 
         if warnings:
+            logging.warning("For %s:" % api_object)
             logging.warning(*warnings)
         if errors:
+            logging.warning("For %s:" % api_object)
             logging.error(**errors)
             raise RequestException
 
