@@ -1,0 +1,14 @@
+{
+    'settings': {}, 
+    'name': 'supermetrics_googlenonsearchads_loads_raw_bronze_silver', 
+    'email_notifications': {
+        'on_success': [], 
+        'on_failure': ['bhorn@pennfoster.edu'], 
+        'no_alert_for_skipped_runs': False
+    }, 
+    'webhook_notifications': {}, 
+    'timeout_seconds': 0, 
+    'max_concurrent_runs': 1, 
+    'tasks': [
+        {
+            'task_key': 'AWGoogleNonSearchAds_bronze', 'notebook_task': {'notebook_path': '/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/bronze/supermetrics_load_to_bronze', 'base_parameters': {'query_name': 'AWGoogleNonSearchAds'}}, 'job_cluster_key': {'supermetrics_loads_raw_bronze_silver'}, 'max_retries': 2, 'min_retry_interval_millis': 300000, 'retry_on_timeout': True, 'timeout_seconds': 1200}, {'task_key': 'OtherGoogleNonSearchAds_bronze', 'notebook_task': {'notebook_path': '/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/bronze/supermetrics_load_to_bronze', 'base_parameters': {'query_name': 'OtherGoogleNonSearchAds'}}, 'job_cluster_key': {'supermetrics_loads_raw_bronze_silver'}, 'max_retries': 2, 'min_retry_interval_millis': 300000, 'retry_on_timeout': True, 'timeout_seconds': 1200}, {'task_key': 'PFGoogleNonSearchAds_bronze', 'notebook_task': {'notebook_path': '/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/bronze/supermetrics_load_to_bronze', 'base_parameters': {'query_name': 'PFGoogleNonSearchAds'}}, 'job_cluster_key': {'supermetrics_loads_raw_bronze_silver'}, 'max_retries': 2, 'min_retry_interval_millis': 300000, 'retry_on_timeout': True, 'timeout_seconds': 1200}, {'task_key': 'GoogleNonSearchAds_silver', 'notebook_task': {'notebook_path': '/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/silver/supermetrics_googlenonsearchads_silver', 'base_parameters': {'search_name': 'GoogleNonSearchAds'}}, 'depends_on': [{'task_key': 'AWGoogleNonSearchAds_bronze'}, {'task_key': 'OtherGoogleNonSearchAds_bronze'}, {'task_key': 'PFGoogleNonSearchAds_bronze'}], 'job_cluster_key': {'supermetrics_loads_raw_bronze_silver'}}], 'job_clusters': [{'job_cluster_key': 'supermetrics_loads_raw_bronze_silver', 'new_cluster': {'cluster_name': '', 'spark_version': '12.2.x-scala2.12', 'spark_conf': {'spark.databricks.delta.preview.enabled': 'true'}, 'azure_attributes': {'first_on_demand': 1, 'availability': 'ON_DEMAND_AZURE', 'spot_bid_max_price': -1}, 'node_type_id': 'Standard_D3_v2', 'enable_elastic_disk': True, 'init_scripts': [{'workspace': {'destination': '/Repos/bhorn@pennfoster.edu/databricks-pipelines.ide/notebooks/supermetrics/requirements.sh'}}], 'data_security_mode': 'SINGLE_USER', 'runtime_engine': 'STANDARD', 'num_workers': 2}}], 'format': 'MULTI_TASK'}
