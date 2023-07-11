@@ -155,7 +155,7 @@ for i in query_list:
             adcampaign_name as campaignname,
             adcampaign_id as campaignid,
             campaignstatus,
-            campaign_daily_budget::decimal(38, 4), 0) as campaigndailybudget,
+            ifnull(campaign_daily_budget::decimal(38, 4), 0) as campaigndailybudget,
             campaign_start_date as campaignstartdate,
             campaign_end_date as campaignenddate,
             adset_name as adsetname,
